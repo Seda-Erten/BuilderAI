@@ -1,0 +1,888 @@
+[
+  {
+    "type": "accordion",
+    "name": "accordion",
+    "description": "A Shadcn/ui accordion component.",
+    "keywords": [
+      "accordion"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "alert-dialog",
+    "name": "alert-dialog",
+    "description": "A Shadcn/ui alert-dialog component.",
+    "keywords": [
+      "alert-dialog"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "alert",
+    "name": "alert",
+    "description": "A Shadcn/ui alert component.",
+    "keywords": [
+      "alert"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "aspect-ratio",
+    "name": "aspect-ratio",
+    "description": "A Shadcn/ui aspect-ratio component.",
+    "keywords": [
+      "aspect-ratio"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "avatar",
+    "name": "avatar",
+    "description": "A Shadcn/ui avatar component.",
+    "keywords": [
+      "avatar"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "badge",
+    "name": "badge",
+    "description": "A Shadcn/ui badge component.",
+    "keywords": [
+      "badge"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "breadcrumb",
+    "name": "breadcrumb",
+    "description": "A Shadcn/ui breadcrumb component.",
+    "keywords": [
+      "breadcrumb"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "button",
+    "name": "button",
+    "description": "A Shadcn/ui button component.",
+    "keywords": [
+      "button"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      },
+      "targetPageId": {
+        "type": "string",
+        "description": "The ID of the page to navigate to when the button is clicked."
+      }
+    }
+  },
+  {
+    "type": "calendar",
+    "name": "calendar",
+    "description": "A Shadcn/ui calendar component.",
+    "keywords": [
+      "calendar"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "card",
+    "name": "card",
+    "description": "A Shadcn/ui card component.",
+    "keywords": [
+      "card"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "carousel",
+    "name": "carousel",
+    "description": "A Shadcn/ui carousel component.",
+    "keywords": [
+      "carousel"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "chart",
+    "name": "chart",
+    "description": "A Shadcn/ui chart component.",
+    "keywords": [
+      "chart"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "checkbox",
+    "name": "checkbox",
+    "description": "A Shadcn/ui checkbox component.",
+    "keywords": [
+      "checkbox"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "collapsible",
+    "name": "collapsible",
+    "description": "A Shadcn/ui collapsible component.",
+    "keywords": [
+      "collapsible"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "command",
+    "name": "command",
+    "description": "A Shadcn/ui command component.",
+    "keywords": [
+      "command"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "context-menu",
+    "name": "context-menu",
+    "description": "A Shadcn/ui context-menu component.",
+    "keywords": [
+      "context-menu"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "dialog",
+    "name": "dialog",
+    "description": "A Shadcn/ui dialog component.",
+    "keywords": [
+      "dialog"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "drawer",
+    "name": "drawer",
+    "description": "A Shadcn/ui drawer component.",
+    "keywords": [
+      "drawer"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "dropdown-menu",
+    "name": "dropdown-menu",
+    "description": "A Shadcn/ui dropdown-menu component.",
+    "keywords": [
+      "dropdown-menu"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "form",
+    "name": "form",
+    "description": "A Shadcn/ui form component.",
+    "keywords": [
+      "form"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "hover-card",
+    "name": "hover-card",
+    "description": "A Shadcn/ui hover-card component.",
+    "keywords": [
+      "hover-card"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "input-otp",
+    "name": "input-otp",
+    "description": "A Shadcn/ui input-otp component.",
+    "keywords": [
+      "input-otp"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "input",
+    "name": "input",
+    "description": "A Shadcn/ui input component.",
+    "keywords": [
+      "input"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "label",
+    "name": "label",
+    "description": "A Shadcn/ui label component.",
+    "keywords": [
+      "label"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "menubar",
+    "name": "menubar",
+    "description": "A Shadcn/ui menubar component.",
+    "keywords": [
+      "menubar"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "navigation-menu",
+    "name": "navigation-menu",
+    "description": "A Shadcn/ui navigation-menu component.",
+    "keywords": [
+      "navigation-menu"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "pagination",
+    "name": "pagination",
+    "description": "A Shadcn/ui pagination component.",
+    "keywords": [
+      "pagination"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "popover",
+    "name": "popover",
+    "description": "A Shadcn/ui popover component.",
+    "keywords": [
+      "popover"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "progress",
+    "name": "progress",
+    "description": "A Shadcn/ui progress component.",
+    "keywords": [
+      "progress"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "radio-group",
+    "name": "radio-group",
+    "description": "A Shadcn/ui radio-group component.",
+    "keywords": [
+      "radio-group"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "resizable",
+    "name": "resizable",
+    "description": "A Shadcn/ui resizable component.",
+    "keywords": [
+      "resizable"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "scroll-area",
+    "name": "scroll-area",
+    "description": "A Shadcn/ui scroll-area component.",
+    "keywords": [
+      "scroll-area"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "select",
+    "name": "select",
+    "description": "A Shadcn/ui select component.",
+    "keywords": [
+      "select"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "separator",
+    "name": "separator",
+    "description": "A Shadcn/ui separator component.",
+    "keywords": [
+      "separator"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "sheet",
+    "name": "sheet",
+    "description": "A Shadcn/ui sheet component.",
+    "keywords": [
+      "sheet"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "sidebar",
+    "name": "sidebar",
+    "description": "A Shadcn/ui sidebar component.",
+    "keywords": [
+      "sidebar"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "skeleton",
+    "name": "skeleton",
+    "description": "A Shadcn/ui skeleton component.",
+    "keywords": [
+      "skeleton"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "slider",
+    "name": "slider",
+    "description": "A Shadcn/ui slider component.",
+    "keywords": [
+      "slider"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "sonner",
+    "name": "sonner",
+    "description": "A Shadcn/ui sonner component.",
+    "keywords": [
+      "sonner"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "switch",
+    "name": "switch",
+    "description": "A Shadcn/ui switch component.",
+    "keywords": [
+      "switch"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "table",
+    "name": "table",
+    "description": "A Shadcn/ui table component.",
+    "keywords": [
+      "table"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "tabs",
+    "name": "tabs",
+    "description": "A Shadcn/ui tabs component.",
+    "keywords": [
+      "tabs"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "textarea",
+    "name": "textarea",
+    "description": "A Shadcn/ui textarea component.",
+    "keywords": [
+      "textarea"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "toast",
+    "name": "toast",
+    "description": "A Shadcn/ui toast component.",
+    "keywords": [
+      "toast"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "toaster",
+    "name": "toaster",
+    "description": "A Shadcn/ui toaster component.",
+    "keywords": [
+      "toaster"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "toggle-group",
+    "name": "toggle-group",
+    "description": "A Shadcn/ui toggle-group component.",
+    "keywords": [
+      "toggle-group"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "toggle",
+    "name": "toggle",
+    "description": "A Shadcn/ui toggle component.",
+    "keywords": [
+      "toggle"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "tooltip",
+    "name": "tooltip",
+    "description": "A Shadcn/ui tooltip component.",
+    "keywords": [
+      "tooltip"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  },
+  {
+    "type": "use-mobile",
+    "name": "use-mobile",
+    "description": "A Shadcn/ui use-mobile component.",
+    "keywords": [
+      "use-mobile"
+    ],
+    "props": {
+      "width": {
+        "type": "number",
+        "description": "Width of the component in pixels."
+      },
+      "height": {
+        "type": "number",
+        "description": "Height of the component in pixels."
+      }
+    }
+  }
+]
