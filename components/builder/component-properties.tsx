@@ -4,16 +4,18 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import type { Component, ProjectPages } from "@/lib/types"
-import { Settings, Type, Text, Square, Palette, Code, Ruler, Link } from "lucide-react"
+import { Settings, Type, Text, Square, Palette, Code, Ruler, Link, Trash2 } from "lucide-react"
 
 interface ComponentPropertiesProps {
   component: Component
-  onUpdate: (id: string, newProps: any) => void
+  onUpdate: (id: string, newProps: any) => void // Prop adı düzeltildi
+  onDeleteComponent: (id: string) => void // Yeni prop eklendi
   pages: ProjectPages
 }
 
-export function ComponentProperties({ component, onUpdate, pages }: ComponentPropertiesProps) {
+export function ComponentProperties({ component, onUpdate, onDeleteComponent, pages }: ComponentPropertiesProps) {
   const handlePropChange = (key: string, value: any) => {
     onUpdate(component.id, { [key]: value })
   }
@@ -27,6 +29,16 @@ export function ComponentProperties({ component, onUpdate, pages }: ComponentPro
         return (
           <Textarea
             id={`${component.id}-${key}`}
+            value={value}
+            onChange={(e) => handlePropChange(key, e.target.value)}
+            className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all"
+          />
+        )
+      case "value": // Yeni: value prop'u için input
+        return (
+          <Input
+            id={`${component.id}-${key}`}
+            type="text"
             value={value}
             onChange={(e) => handlePropChange(key, e.target.value)}
             className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all"
@@ -118,6 +130,7 @@ export function ComponentProperties({ component, onUpdate, pages }: ComponentPro
       case "text":
       case "title":
       case "content":
+      case "value": // Yeni: value prop'u için ikon
         return <Text className="w-4 h-4 mr-2" />
       case "placeholder":
         return <Type className="w-4 h-4 mr-2" />
@@ -160,6 +173,10 @@ export function ComponentProperties({ component, onUpdate, pages }: ComponentPro
             {renderPropInput(key, value)}
           </div>
         ))}
+        <Button variant="destructive" className="w-full mt-4" onClick={() => onDeleteComponent(component.id)}>
+          <Trash2 className="w-4 h-4 mr-2" />
+          Bileşeni Sil
+        </Button>
       </CardContent>
     </Card>
   )

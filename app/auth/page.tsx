@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Sparkles, User, Mail, Lock, Loader2 } from "lucide-react"
+import { Brain, User, Mail, Lock, Loader2, Shield, Zap, ArrowRight } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
@@ -48,31 +48,64 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-hidden p-4">
-      {/* Animated Background Blobs */}
+    <div className="min-h-screen flex items-center justify-center bg-[#0F172A] relative overflow-hidden p-4">
+      {/* Futuristic Background Effects */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-slate-900/50 to-[#0F172A]" />
+
+        {/* Grid Pattern */}
         <div
-          className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"
+          className="absolute inset-0 opacity-20"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: "50px 50px",
+          }}
+        />
+
+        {/* Glowing Effects */}
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[#6366F1]/20 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute top-40 right-20 w-96 h-96 bg-[#06B6D4]/20 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "2s" }}
         ></div>
+        <div
+          className="absolute bottom-20 left-40 w-72 h-72 bg-[#F59E0B]/15 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "4s" }}
+        ></div>
+
+        {/* Tech Particles */}
+        <div className="absolute top-32 left-32 w-2 h-2 bg-[#6366F1] rounded-full animate-ping" />
+        <div
+          className="absolute top-60 right-40 w-1 h-1 bg-[#06B6D4] rounded-full animate-ping"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute bottom-40 left-60 w-1.5 h-1.5 bg-[#F59E0B] rounded-full animate-ping"
+          style={{ animationDelay: "3s" }}
+        />
       </div>
 
-      <Card className="relative z-10 w-full max-w-md bg-black/30 backdrop-blur-xl border-white/10 shadow-2xl animate-fade-in-up">
+      <Card className="relative z-10 w-full max-w-md bg-[#1E293B]/95 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-indigo-500/10">
         <CardHeader className="text-center pb-6">
-          <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <Sparkles className="w-10 h-10 text-white animate-spin-slow" />
+          <div className="w-20 h-20 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/25">
+            <Brain className="w-10 h-10 text-white animate-pulse" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] bg-clip-text text-transparent">
             {isLogin ? "Giriş Yap" : "Kayıt Ol"}
           </CardTitle>
-          <CardDescription className="text-white/70 mt-2">AI Builder Pro'ya hoş geldin!</CardDescription>
+          <CardDescription className="text-slate-300 mt-2 flex items-center justify-center">
+            <Shield className="w-4 h-4 mr-2 text-[#06B6D4]" />
+            AI Builder Pro'ya hoş geldin!
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-6">
             <div>
-              <Label htmlFor="email" className="text-white/80 flex items-center mb-2">
-                <Mail className="w-4 h-4 mr-2" />
+              <Label htmlFor="email" className="text-slate-200 flex items-center mb-2">
+                <Mail className="w-4 h-4 mr-2 text-[#06B6D4]" />
                 E-posta
               </Label>
               <Input
@@ -82,12 +115,12 @@ export default function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all"
+                className="bg-slate-800/50 border-slate-600/50 text-[#F8FAFC] placeholder:text-slate-400 focus:bg-slate-800/70 focus:border-[#6366F1] transition-all backdrop-blur-sm"
               />
             </div>
             <div>
-              <Label htmlFor="password" className="text-white/80 flex items-center mb-2">
-                <Lock className="w-4 h-4 mr-2" />
+              <Label htmlFor="password" className="text-slate-200 flex items-center mb-2">
+                <Lock className="w-4 h-4 mr-2 text-[#06B6D4]" />
                 Şifre
               </Label>
               <Input
@@ -97,14 +130,16 @@ export default function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all"
+                className="bg-slate-800/50 border-slate-600/50 text-[#F8FAFC] placeholder:text-slate-400 focus:bg-slate-800/70 focus:border-[#6366F1] transition-all backdrop-blur-sm"
               />
             </div>
 
             {message && (
               <div
-                className={`p-3 rounded-md text-sm ${
-                  message.type === "success" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+                className={`p-3 rounded-md text-sm backdrop-blur-sm ${
+                  message.type === "success"
+                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                    : "bg-red-500/20 text-red-300 border border-red-500/30"
                 }`}
               >
                 {message.text}
@@ -113,7 +148,7 @@ export default function AuthPage() {
 
             <Button
               type="submit"
-              className="w-full py-3 text-lg bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 hover:from-purple-600 hover:via-pink-600 hover:to-cyan-600 shadow-lg hover:shadow-purple-500/25 transition-all transform hover:scale-105"
+              className="w-full py-3 text-lg bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] hover:from-indigo-600 hover:via-cyan-600 hover:to-indigo-600 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 transition-all transform hover:scale-105"
               disabled={loading}
             >
               {loading ? (
@@ -121,20 +156,21 @@ export default function AuthPage() {
               ) : isLogin ? (
                 <User className="mr-2 h-5 w-5" />
               ) : (
-                <Sparkles className="mr-2 h-5 w-5" />
+                <Zap className="mr-2 h-5 w-5" />
               )}
               {loading ? "Yükleniyor..." : isLogin ? "Giriş Yap" : "Kayıt Ol"}
+              {!loading && <ArrowRight className="ml-2 h-5 w-5" />}
             </Button>
           </form>
 
-          <div className="mt-6 text-center text-white/70">
+          <div className="mt-6 text-center text-slate-300">
             {isLogin ? (
               <p>
                 Hesabın yok mu?{" "}
                 <Button
                   variant="link"
                   onClick={() => setIsLogin(false)}
-                  className="text-purple-400 hover:text-purple-300"
+                  className="text-[#6366F1] hover:text-[#06B6D4] p-0"
                 >
                   Kayıt Ol
                 </Button>
@@ -142,11 +178,23 @@ export default function AuthPage() {
             ) : (
               <p>
                 Zaten hesabın var mı?{" "}
-                <Button variant="link" onClick={() => setIsLogin(true)} className="text-cyan-400 hover:text-cyan-300">
+                <Button
+                  variant="link"
+                  onClick={() => setIsLogin(true)}
+                  className="text-[#06B6D4] hover:text-[#6366F1] p-0"
+                >
                   Giriş Yap
                 </Button>
               </p>
             )}
+          </div>
+
+          {/* Additional Security Info */}
+          <div className="mt-6 p-3 bg-gradient-to-r from-[#6366F1]/10 to-[#06B6D4]/10 border border-[#6366F1]/20 rounded-lg backdrop-blur-sm">
+            <div className="flex items-center text-xs text-slate-300">
+              <Shield className="w-3 h-3 mr-2 text-[#06B6D4]" />
+              Quantum güvenlik ile korumalı
+            </div>
           </div>
         </CardContent>
       </Card>

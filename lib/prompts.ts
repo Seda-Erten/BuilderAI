@@ -1,102 +1,418 @@
-// Bu dosya, AI modelinizin prompt'larını ve bileşen oluşturma mantığını içerir.
+// Modern ve profesyonel bileşen örnekleri - RENK ÖDEKLİ GÜNCELLEMELER
+const EXAMPLE_COMPONENTS = {
+  hero: {
+    id: "hero-section",
+    type: "div",
+    x: 50,
+    y: 50,
+    props: {
+      className:
+        "flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-red-50 px-8 py-16",
+      width: 800,
+      height: 600,
+    },
+    children: [
+      {
+        id: "hero-title",
+        type: "text",
+        x: 0,
+        y: 0,
+        props: {
+          text: "Geleceğin Web Uygulamalarını Oluşturun",
+          className:
+            "text-6xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 text-center leading-tight",
+          width: 700,
+          height: 100,
+        },
+      },
+      {
+        id: "hero-subtitle",
+        type: "text",
+        x: 0,
+        y: 0,
+        props: {
+          text: "AI destekli no-code platform ile profesyonel web uygulamaları dakikalar içinde oluşturun.",
+          className: "text-xl text-gray-700 mb-8 text-center max-w-3xl",
+          width: 600,
+          height: 60,
+        },
+      },
+      {
+        id: "hero-cta",
+        type: "button",
+        x: 0,
+        y: 0,
+        props: {
+          text: "Hemen Başla",
+          variant: "default",
+          className:
+            "px-8 py-4 text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105",
+          width: 200,
+          height: 60,
+        },
+      },
+    ],
+  },
 
-import type { Component } from "@/lib/types"
-// shadcn-component-props.json dosyasını import ediyoruz.
-// Bu dosyanın lib klasöründe olduğundan emin olun.
-import shadcnComponentProps from "./shadcn-component-props.json"
+  loginForm: {
+    id: "login-form",
+    type: "card",
+    x: 100,
+    y: 100,
+    props: {
+      title: "Giriş Yap",
+      content: "Hesabınıza güvenli giriş yapın",
+      className:
+        "w-full max-w-md mx-auto p-8 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl shadow-2xl border border-emerald-200",
+      width: 400,
+      height: 500,
+    },
+    children: [
+      {
+        id: "email-input",
+        type: "input",
+        x: 0,
+        y: 0,
+        props: {
+          placeholder: "E-posta adresiniz",
+          type: "email",
+          className:
+            "w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 mb-4 bg-white/80",
+          width: 350,
+          height: 50,
+        },
+      },
+      {
+        id: "password-input",
+        type: "input",
+        x: 0,
+        y: 0,
+        props: {
+          placeholder: "Şifreniz",
+          type: "password",
+          className:
+            "w-full px-4 py-3 border-2 border-emerald-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 mb-6 bg-white/80",
+          width: 350,
+          height: 50,
+        },
+      },
+      {
+        id: "login-button",
+        type: "button",
+        x: 0,
+        y: 0,
+        props: {
+          text: "Giriş Yap",
+          variant: "default",
+          className:
+            "w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105",
+          width: 350,
+          height: 50,
+        },
+      },
+    ],
+  },
 
-// AI'ya örnek olarak verilecek genel bir bileşen yapısı döndürür
-export const getExampleComponent = (): { typeHint: string; example: string } => {
-  const exampleComponents: Component[] = [
-    {
-      id: "example-button-1",
-      type: "button",
-      x: 150,
-      y: 100,
-      props: {
-        text: "Hemen Başla",
-        variant: "default",
-        width: 180,
-        height: 50,
-        className: "bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg",
-        targetPageId: "page-2",
-      },
+  navbar: {
+    id: "navbar",
+    type: "div",
+    x: 0,
+    y: 0,
+    props: {
+      className:
+        "w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 shadow-xl border-b-4 border-white/20 px-6 py-4",
+      width: 1200,
+      height: 80,
     },
-    {
-      id: "example-input-1",
-      type: "input",
-      x: 150,
-      y: 180,
-      props: {
-        placeholder: "E-posta adresinizi girin",
-        type: "email",
-        width: 280,
-        height: 45,
-        className: "border-gray-300 focus:border-purple-500 rounded-md px-3 py-2",
+    children: [
+      {
+        id: "nav-container",
+        type: "div",
+        x: 0,
+        y: 0,
+        props: {
+          className: "flex items-center justify-between max-w-7xl mx-auto",
+          width: 1100,
+          height: 60,
+        },
+        children: [
+          {
+            id: "logo",
+            type: "text",
+            x: 0,
+            y: 0,
+            props: {
+              text: "🚀 Logo",
+              className: "text-2xl font-bold text-white",
+              width: 100,
+              height: 40,
+            },
+          },
+          {
+            id: "nav-menu",
+            type: "div",
+            x: 0,
+            y: 0,
+            props: {
+              className: "flex items-center space-x-8",
+              width: 400,
+              height: 40,
+            },
+            children: [
+              {
+                id: "nav-link-1",
+                type: "button",
+                x: 0,
+                y: 0,
+                props: {
+                  text: "Ana Sayfa",
+                  variant: "ghost",
+                  className:
+                    "text-white/90 hover:text-white hover:bg-white/20 font-medium rounded-lg px-4 py-2 transition-all",
+                  width: 100,
+                  height: 40,
+                },
+              },
+              {
+                id: "nav-link-2",
+                type: "button",
+                x: 0,
+                y: 0,
+                props: {
+                  text: "Hakkımızda",
+                  variant: "ghost",
+                  className:
+                    "text-white/90 hover:text-white hover:bg-white/20 font-medium rounded-lg px-4 py-2 transition-all",
+                  width: 100,
+                  height: 40,
+                },
+              },
+              {
+                id: "nav-cta",
+                type: "button",
+                x: 0,
+                y: 0,
+                props: {
+                  text: "Başla",
+                  variant: "default",
+                  className:
+                    "px-6 py-2 bg-white text-purple-600 hover:bg-gray-100 font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105",
+                  width: 100,
+                  height: 40,
+                },
+              },
+            ],
+          },
+        ],
       },
+    ],
+  },
+
+  pricingCards: {
+    id: "pricing-section",
+    type: "div",
+    x: 50,
+    y: 50,
+    props: {
+      className: "py-16 px-8 bg-gradient-to-br from-orange-50 via-red-50 to-pink-50",
+      width: 1000,
+      height: 600,
     },
-    {
-      id: "example-card-1",
-      type: "card",
-      x: 450,
-      y: 100,
-      props: {
-        title: "Örnek Kart Başlığı",
-        content: "Bu bir örnek kart içeriğidir. Buraya daha fazla metin eklenebilir.",
-        width: 320,
-        height: 200,
-        className: "bg-white p-6 rounded-xl shadow-lg border border-gray-200",
+    children: [
+      {
+        id: "pricing-title",
+        type: "text",
+        x: 0,
+        y: 0,
+        props: {
+          text: "Fiyatlandırma Planları",
+          className:
+            "text-4xl font-bold text-center bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent mb-12",
+          width: 900,
+          height: 60,
+        },
       },
-    },
-    {
-      id: "example-text-1",
-      type: "text", // Özel metin bileşeni (div)
-      x: 150,
-      y: 250,
-      props: {
-        text: "Bu, AI tarafından oluşturulan bir metin bileşenidir.",
-        className: "text-lg font-medium text-gray-800",
-        width: 300,
-        height: 40,
+      {
+        id: "pricing-grid",
+        type: "div",
+        x: 0,
+        y: 0,
+        props: {
+          className: "grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto",
+          width: 900,
+          height: 450,
+        },
+        children: [
+          {
+            id: "basic-plan",
+            type: "card",
+            x: 0,
+            y: 0,
+            props: {
+              title: "Temel Plan",
+              content: "Başlangıç için ideal",
+              className:
+                "p-6 bg-white rounded-2xl shadow-xl border-2 border-orange-200 text-center hover:shadow-2xl transition-all transform hover:scale-105",
+              width: 280,
+              height: 400,
+            },
+          },
+          {
+            id: "pro-plan",
+            type: "card",
+            x: 0,
+            y: 0,
+            props: {
+              title: "Pro Plan",
+              content: "Profesyoneller için",
+              className:
+                "p-6 bg-gradient-to-br from-orange-100 to-red-100 rounded-2xl shadow-2xl border-4 border-orange-500 text-center transform scale-110 hover:scale-115 transition-all",
+              width: 280,
+              height: 400,
+            },
+          },
+          {
+            id: "enterprise-plan",
+            type: "card",
+            x: 0,
+            y: 0,
+            props: {
+              title: "Kurumsal Plan",
+              content: "Büyük ekipler için",
+              className:
+                "p-6 bg-white rounded-2xl shadow-xl border-2 border-red-200 text-center hover:shadow-2xl transition-all transform hover:scale-105",
+              width: 280,
+              height: 400,
+            },
+          },
+        ],
       },
-    },
-  ]
+    ],
+  },
+}
+
+// Prompt'tan bileşen türünü tahmin et
+function detectComponentType(prompt: string): string {
+  const lowerPrompt = prompt.toLowerCase()
+
+  if (lowerPrompt.includes("hero") || lowerPrompt.includes("ana sayfa") || lowerPrompt.includes("başlık")) {
+    return "hero"
+  }
+  if (lowerPrompt.includes("login") || lowerPrompt.includes("giriş") || lowerPrompt.includes("form")) {
+    return "loginForm"
+  }
+  if (lowerPrompt.includes("navbar") || lowerPrompt.includes("menü") || lowerPrompt.includes("navigation")) {
+    return "navbar"
+  }
+  if (lowerPrompt.includes("pricing") || lowerPrompt.includes("fiyat") || lowerPrompt.includes("plan")) {
+    return "pricingCards"
+  }
+
+  return "hero" // Varsayılan
+}
+
+// AI'ya verilecek örnek bileşeni döndür
+export const getExampleComponent = (prompt: string): { typeHint: string; example: string } => {
+  const componentType = detectComponentType(prompt)
+  const example = EXAMPLE_COMPONENTS[componentType as keyof typeof EXAMPLE_COMPONENTS]
 
   return {
-    typeHint: "genel bileşen yapısı",
-    example: JSON.stringify(exampleComponents, null, 2),
+    typeHint: componentType,
+    example: JSON.stringify([example], null, 2),
   }
 }
 
-// AI'ya verilecek sistem prompt'unu oluşturur
+// Geliştirilmiş sistem prompt'u - RENK ODAKLI
 export const getSystemPrompt = (typeHint: string, exampleJson: string): string => {
-  // Shadcn/ui bileşen kütüphanesi bilgilerini JSON string'ine dönüştürüyoruz
-  const shadcnLibraryInfo = JSON.stringify(shadcnComponentProps, null, 2)
+  return `Sen profesyonel bir React bileşen oluşturma uzmanısın. Kullanıcının isteğine göre modern, responsive ve RENKLI bileşenler oluşturmalısın.
 
-  return `Sen bir web uygulaması bileşen oluşturma asistanısın. Kullanıcının isteğine göre modern, responsive, temiz ve profesyonel görünümlü React bileşenlerini JSON formatında oluşturmalısın.
-  
-  **Kullanılabilir Bileşen Kütüphanesi (Shadcn/ui ve Özel Bileşenler):**
-  Aşağıdaki JSON, kullanabileceğin bileşen türlerini ve her birinin alabileceği prop'ları tanımlar. Lütfen bu tanımlara kesinlikle sadık kal.
-  ${shadcnLibraryInfo}
+**🎨 RENK KULLANIM KURALLARI:**
+1. MUTLAKA kullanıcının belirttiği renkleri kullan
+2. Renk belirtilmemişse, canlı ve modern renkler seç
+3. Gradient'ler kullan: from-[renk]-500 to-[renk]-600
+4. Hover efektleri için daha koyu tonlar: hover:from-[renk]-600
+5. Arka planlar için açık tonlar: bg-[renk]-50, bg-[renk]-100
+6. Border'lar için orta tonlar: border-[renk]-300
 
-  **Genel Kurallar:**
-  - Sadece JSON çıktısı ver, başka hiçbir metin, açıklama veya kod bloğu etiketi ekleme.
-  - Her bileşenin bir 'id' (benzersiz string), 'type' (kütüphanedeki 'type' alanına uygun string), 'x' (number), 'y' (number) ve 'props' (object) alanı olmalı.
-  - 'x' ve 'y' değerleri 50 ile 500 arasında rastgele olmalı.
-  - 'props' içindeki 'width' değeri 100 ile 600 arasında, 'height' değeri ise 30 ile 400 arasında rastgele olmalı.
-  - 'targetPageId' prop'u sadece 'button' tipi bileşenler için kullanılabilir ve boş bir string ("") veya "page-1", "page-2" gibi mevcut bir sayfa ID'si olabilir.
-  - Tailwind CSS sınıflarını (örneğin: flex, grid, gap, padding, margin, colors, shadows, rounded, font-weights, text-sizes) kullanarak bileşenleri stilize etmeye özen göster.
-  - Oluşturduğun bileşenlerin birbiriyle uyumlu ve görsel olarak düzenli olmasına dikkat et. Örneğin, bir form oluşturuyorsan input'ları ve butonu alt alta hizala ve uygun boşluklar bırak.
-  - Kullanıcı arayüzü tasarımının en iyi uygulamalarını göz önünde bulundur.
+**🌈 POPÜLER RENK PALETLERİ:**
+- **Mavi**: blue-500, indigo-600, sky-500
+- **Mor**: purple-500, violet-600, fuchsia-500  
+- **Yeşil**: emerald-500, green-600, teal-500
+- **Kırmızı**: red-500, rose-600, pink-500
+- **Turuncu**: orange-500, amber-600, yellow-500
 
-  **Örnek Çıktı Formatı:**
-  İşte bir ${typeHint} için örnek JSON formatı. Bu örnek, genel yapıyı ve prop kullanımını gösterir.
-  ${exampleJson}
+**TEMEL KURALLAR:**
+1. Sadece JSON formatında yanıt ver, başka hiçbir metin ekleme
+2. Her bileşen bir dizi içinde olmalı: [component1, component2, ...]
+3. Bileşenler iç içe geçmiş (nested) yapıda olabilir
 
-  Lütfen kullanıcının isteğine göre yukarıdaki kurallara ve kütüphane bilgilerine uygun bir JSON dizisi oluştur.`
+**KULLANILABILIR BILEŞEN TİPLERİ:**
+- "button": Butonlar için
+- "text": Başlık, paragraf, metin için  
+- "input": Form giriş alanları için
+- "card": Kart/panel yapıları için
+- "div": Kapsayıcı/layout için
+
+**🎨 TASARIM PRENSİPLERİ:**
+- CANLI ve RENKLI görünüm (sıkıcı gri tonlardan kaçın!)
+- Gradient arka planlar kullan
+- Hover efektleri ve geçişler
+- Gölgeler ve yuvarlak köşeler (rounded-xl, rounded-2xl)
+- Transform efektleri (hover:scale-105)
+- Responsive tasarım (Tailwind CSS kullan)
+
+**BILEŞEN YAPISI:**
+{
+  "id": "benzersiz-id",
+  "type": "button|text|input|card|div",
+  "x": 50-500, // Ana tuval konumu
+  "y": 50-500, // Ana tuval konumu  
+  "props": {
+    "className": "RENKLI-tailwind-css-sınıfları",
+    "text": "metin-içeriği", // text ve button için
+    "placeholder": "placeholder-metni", // input için
+    "title": "kart-başlığı", // card için
+    "content": "kart-içeriği", // card için
+    "variant": "default|outline|ghost", // button için
+    "type": "text|email|password", // input için
+    "width": 100-800,
+    "height": 40-600
+  },
+  "children": [] // İç içe bileşenler için
 }
 
-// Kullanıcı prompt'unu döndürür
+**🎨 RENK ÖRNEKLERİ:**
+- Buton: "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+- Arka plan: "bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50"
+- Metin: "bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
+- Border: "border-2 border-rose-300"
+- Gölge: "shadow-xl shadow-purple-500/25"
+
+**ÖRNEK BILEŞEN:**
+${exampleJson}
+
+**ÖNEMLİ NOTLAR:**
+- className'de MUTLAKA renkli Tailwind CSS sınıfları kullan
+- İç içe bileşenlerde x,y değerlerini 0 yap
+- Layout için flex, grid kullan
+- Responsive breakpoint'ler ekle (md:, lg:)
+- Hover ve focus durumları için stil ekle
+- CANLI renk kombinasyonları kullan - sıkıcı gri tonlardan kaçın!
+
+Şimdi kullanıcının isteğine göre RENKLI ve mükemmel bir bileşen oluştur:`
+}
+
+// Kullanıcı prompt'unu döndür - RENK ODAKLI
 export const getComponentPrompt = (userRequest: string): string => {
-  return `Kullanıcının isteği: "${userRequest}"`
+  return `Kullanıcı İsteği: "${userRequest}"
+
+Bu isteğe göre RENKLI, modern, profesyonel ve görsel olarak mükemmel bir bileşen oluştur. 
+
+🎨 RENK TALİMATLARI:
+- Eğer kullanıcı belirli bir renk belirtmişse, MUTLAKA o rengi kullan
+- Renk belirtilmemişse, canlı ve çekici renkler seç (mavi, mor, yeşil, kırmızı, turuncu)
+- Gradient'ler ve hover efektleri ekle
+- Sıkıcı gri tonlardan kaçın, canlı renkler kullan!
+
+Responsive tasarım ve kullanıcı deneyimini öncelikle düşün.`
 }

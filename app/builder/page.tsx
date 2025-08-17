@@ -2,13 +2,13 @@
 
 import type React from "react"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import {
-  Sparkles,
+  Brain,
   Code,
   Palette,
   Send,
@@ -19,7 +19,7 @@ import {
   Copy,
   Zap,
   Star,
-  Crown,
+  Cpu,
   Rocket,
   Users,
   LogOut,
@@ -37,6 +37,17 @@ import { ComponentLibrary } from "@/components/builder/component-library"
 import { renderComponent } from "@/lib/component-renderer"
 import { generateCode } from "@/lib/code-generator"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { supabase } from "@/lib/supabase"
 
 export default function BuilderPage() {
@@ -57,7 +68,9 @@ export default function BuilderPage() {
   const [exportedCode, setExportedCode] = useState("")
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false)
   const [editingPageId, setEditingPageId] = useState<string | null>(null)
+  const [isClearPageConfirmOpen, setIsClearPageConfirmOpen] = useState(false)
   const router = useRouter()
+  const pagesRef = useRef(pages)
 
   // Supabase kullanıcı kontrolü ve proje yükleme
   useEffect(() => {
@@ -66,20 +79,79 @@ export default function BuilderPage() {
         data: { user },
       } = await supabase.auth.getUser()
       if (!user) {
-        router.push("/auth") // Kimlik doğrulanmamışsa giriş sayfasına yönlendir
+        router.push("/auth")
       } else {
-        // Kullanıcı giriş yapmışsa projeyi yüklemeyi dene
         handleLoadProject()
       }
     }
     checkUserAndLoadProject()
-  }, [router]) // router değiştiğinde tekrar çalışır
+  }, [router])
+
+  useEffect(() => {
+    pagesRef.current = pages
+    console.log("Pages state updated (via useEffect):", pages)
+    console.log("Current canvas components (via useEffect):", pages[currentPageId]?.components)
+  }, [pages, currentPageId])
 
   const canvasComponents = pages[currentPageId]?.components || []
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
     router.push("/auth")
+  }
+
+  // handleSaveProject fonksiyonunu güncelledik: artık pages'ı argüman olarak alıyor ve showSuccessMessage parametresi eklendi
+  const handleSaveProject = async (currentPages: ProjectPages, showSuccessMessage = false) => {
+    // currentPages'ı zorunlu yaptık
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      setMessages((prev) => [
+        ...prev,
+        { type: "error", content: "Projeyi kaydetmek için giriş yapmalısın.", timestamp: new Date() },
+      ])
+      return
+    }
+
+    try {
+      const userId = user.id
+      const projectName = "default_project"
+
+      console.log("handleSaveProject: Kaydedilecek proje verisi:", JSON.parse(JSON.stringify(currentPages)))
+      console.log("handleSaveProject: Kullanıcı ID:", userId)
+
+      const { data, error } = await supabase
+        .from("user_projects")
+        .upsert(
+          {
+            user_id: userId,
+            project_name: projectName,
+            project_data: currentPages,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id, project_name" },
+        )
+        .select()
+
+      if (error) {
+        throw error
+      }
+
+      console.log("handleSaveProject: Proje başarıyla Supabase'e kaydedildi:", data)
+      if (showSuccessMessage) {
+        setMessages((prev) => [
+          ...prev,
+          { type: "success", content: "Proje başarıyla kaydedildi!", timestamp: new Date() },
+        ])
+      }
+    } catch (error: any) {
+      console.error("handleSaveProject: Projeyi kaydetme hatası:", error)
+      setMessages((prev) => [
+        ...prev,
+        { type: "error", content: `Projeyi kaydederken bir hata oluştu: ${error.message}`, timestamp: new Date() },
+      ])
+    }
   }
 
   const handleGenerate = async () => {
@@ -109,15 +181,17 @@ export default function BuilderPage() {
       }
 
       const data = await response.json()
-      const newComponents: Component[] = data.components // API'den gelen bileşenler dizisi
+      const newComponents: Component[] = data.components
 
-      setPages((prev) => ({
-        ...prev,
+      const updatedPages = {
+        ...pages,
         [currentPageId]: {
-          ...prev[currentPageId],
-          components: [...(prev[currentPageId]?.components || []), ...newComponents],
+          ...pages[currentPageId],
+          components: [...(pages[currentPageId]?.components || []), ...newComponents],
         },
-      }))
+      }
+      setPages(updatedPages)
+      await handleSaveProject(updatedPages, true) // Bileşen eklendikten sonra kaydet ve başarı mesajı göster
 
       const aiMessage: Message = {
         type: "ai",
@@ -143,6 +217,7 @@ export default function BuilderPage() {
   }
 
   const handleComponentDrag = (id: string, newX: number, newY: number) => {
+    // Sadece yerel state'i güncelle, kaydetme işlemi mouseUp'ta yapılacak
     setPages((prev) => ({
       ...prev,
       [currentPageId]: {
@@ -154,83 +229,40 @@ export default function BuilderPage() {
     }))
   }
 
-  const deleteComponent = (id: string) => {
-    setPages((prev) => ({
-      ...prev,
+  const deleteComponent = async (id: string) => {
+    const updatedComponents = pages[currentPageId].components.filter((comp) => comp.id !== id)
+    const updatedPages = {
+      ...pages,
       [currentPageId]: {
-        ...prev[currentPageId],
-        components: prev[currentPageId].components.filter((comp) => comp.id !== id),
+        ...pages[currentPageId],
+        components: updatedComponents,
       },
-    }))
+    }
+    setPages(updatedPages)
+    console.log("Bileşen silindi, yeni state:", updatedPages)
+    await handleSaveProject(updatedPages, false) // Bileşen silindikten sonra kaydet (mesaj gösterme)
+
     if (selectedComponent === id) {
       setSelectedComponent(null)
     }
   }
 
   const updateComponentProps = useCallback(
-    (id: string, newProps: any) => {
-      setPages((prev) => ({
-        ...prev,
-        [currentPageId]: {
-          ...prev[currentPageId],
-          components: prev[currentPageId].components.map((comp) =>
-            comp.id === id ? { ...comp, props: { ...comp.props, ...newProps } } : comp,
-          ),
-        },
-      }))
+    async (id: string, newProps: any) => {
+      const updatedComponents = pages[currentPageId].components.map((comp) =>
+        comp.id === id ? { ...comp, props: { ...comp.props, ...newProps } } : comp,
+      )
+      const updatedPages = { ...pages, [currentPageId]: { ...pages[currentPageId], components: updatedComponents } }
+      setPages(updatedPages)
+      await handleSaveProject(updatedPages, false) // Prop güncellendikten sonra kaydet (mesaj gösterme)
     },
-    [currentPageId],
+    [currentPageId, pages], // pages'ı bağımlılık dizisine ekledik
   )
 
   const handleExportCode = () => {
-    const code = generateCode(pages) // Tüm sayfaları gönder
+    const code = generateCode(pages)
     setExportedCode(code)
     setIsExportDialogOpen(true)
-  }
-
-  const handleSaveProject = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      setMessages((prev) => [
-        ...prev,
-        { type: "error", content: "Projeyi kaydetmek için giriş yapmalısın.", timestamp: new Date() },
-      ])
-      return
-    }
-
-    try {
-      const userId = user.id
-      const projectName = "default_project" // Şimdilik tek bir proje adı kullanalım
-
-      const { data, error } = await supabase
-        .from("user_projects")
-        .upsert(
-          {
-            user_id: userId,
-            project_name: projectName,
-            project_data: pages, // Tüm pages objesini JSONB olarak kaydet
-          },
-          { onConflict: "user_id, project_name" }, // user_id ve project_name çakışırsa güncelle
-        )
-        .select()
-
-      if (error) {
-        throw error
-      }
-
-      setMessages((prev) => [
-        ...prev,
-        { type: "success", content: "Proje başarıyla kaydedildi!", timestamp: new Date() },
-      ])
-    } catch (error: any) {
-      console.error("Projeyi kaydetme hatası:", error)
-      setMessages((prev) => [
-        ...prev,
-        { type: "error", content: `Projeyi kaydederken bir hata oluştu: ${error.message}`, timestamp: new Date() },
-      ])
-    }
   }
 
   const handleLoadProject = async () => {
@@ -249,6 +281,8 @@ export default function BuilderPage() {
       const userId = user.id
       const projectName = "default_project"
 
+      console.log("handleLoadProject: Yüklenecek proje için kullanıcı ID:", userId)
+
       const { data, error } = await supabase
         .from("user_projects")
         .select("project_data")
@@ -257,16 +291,20 @@ export default function BuilderPage() {
         .single()
 
       if (error && error.code !== "PGRST116") {
-        // PGRST116 = Satır bulunamadı hatası
+        // PGRST116 means "no rows found"
         throw error
       }
 
       if (data && data.project_data) {
         const loadedPages = data.project_data as ProjectPages
+        console.log("handleLoadProject: Supabase'den yüklenen ham veri:", data.project_data)
+        console.log("handleLoadProject: Supabase'den yüklenen işlenmiş sayfalar:", loadedPages)
         setPages(loadedPages)
-        setCurrentPageId(Object.keys(loadedPages)[0]) // İlk sayfayı varsayılan olarak ayarla
+        setCurrentPageId(Object.keys(loadedPages)[0])
+        console.log("handleLoadProject: Proje başarıyla yüklendi ve state güncellendi.")
         setMessages((prev) => [...prev, { type: "ai", content: "Proje başarıyla yüklendi!", timestamp: new Date() }])
       } else {
+        console.log("handleLoadProject: Kaydedilmiş proje bulunamadı. Yeni bir proje oluşturuluyor.")
         setMessages((prev) => [
           ...prev,
           {
@@ -275,12 +313,11 @@ export default function BuilderPage() {
             timestamp: new Date(),
           },
         ])
-        // Eğer proje yoksa varsayılan boş bir proje ile başla
         setPages({ "page-1": { name: "Ana Sayfa", components: [] } })
         setCurrentPageId("page-1")
       }
     } catch (error: any) {
-      console.error("Projeyi yükleme hatası:", error)
+      console.error("handleLoadProject: Projeyi yükleme hatası:", error)
       setMessages((prev) => [
         ...prev,
         { type: "error", content: `Projeyi yüklerken bir hata oluştu: ${error.message}`, timestamp: new Date() },
@@ -288,28 +325,31 @@ export default function BuilderPage() {
     }
   }
 
-  const handleNewPage = () => {
+  const handleNewPage = async () => {
     const newPageId = `page-${Object.keys(pages).length + 1}`
-    setPages((prev) => ({
-      ...prev,
+    const updatedPages = {
+      ...pages,
       [newPageId]: { name: `Sayfa ${Object.keys(pages).length + 1}`, components: [] },
-    }))
+    }
+    setPages(updatedPages)
+    await handleSaveProject(updatedPages, true) // Yeni sayfa eklendikten sonra kaydet ve başarı mesajı göster
     setCurrentPageId(newPageId)
     setSelectedComponent(null)
   }
 
-  const handleDeletePage = (pageId: string) => {
+  const handleDeletePage = async (pageId: string) => {
     if (Object.keys(pages).length === 1) {
       setMessages((prev) => [...prev, { type: "error", content: "Son sayfayı silemezsin!", timestamp: new Date() }])
       return
     }
-    setPages((prev) => {
-      const newPages = { ...prev }
-      delete newPages[pageId]
-      return newPages
-    })
+    const newPages = { ...pages }
+    delete newPages[pageId]
+    const updatedPages = { ...newPages }
+    setPages(updatedPages)
+    await handleSaveProject(updatedPages, true) // Sayfa silindikten sonra kaydet ve başarı mesajı göster
+
     if (currentPageId === pageId) {
-      setCurrentPageId(Object.keys(pages)[0]) // Silinen sayfa aktifse ilk sayfaya geç
+      setCurrentPageId(Object.keys(pages)[0])
     }
     setSelectedComponent(null)
   }
@@ -319,21 +359,39 @@ export default function BuilderPage() {
     setSelectedComponent(null)
   }
 
-  const handlePageNameChange = (pageId: string, newName: string) => {
-    setPages((prev) => ({
-      ...prev,
+  const handlePageNameChange = async (pageId: string, newName: string) => {
+    const updatedPages = {
+      ...pages,
       [pageId]: {
-        ...prev[pageId],
+        ...pages[pageId],
         name: newName,
       },
-    }))
+    }
+    setPages(updatedPages)
+    await handleSaveProject(updatedPages, false) // Sayfa adı değiştikten sonra kaydet (mesaj gösterme)
+  }
+
+  // Sayfayı temizleme işlemini gerçekleştiren fonksiyon
+  const confirmClearPage = async () => {
+    console.log("confirmClearPage called. Current pages state (before update):", JSON.parse(JSON.stringify(pages)))
+    const updatedPages = { ...pages, [currentPageId]: { ...pages[currentPageId], components: [] } }
+    console.log("updatedPages object (before setPages):", JSON.parse(JSON.stringify(updatedPages)))
+    setPages(updatedPages) // This updates the local state
+    console.log("setPages called for clearing page. UI should update now.")
+
+    // UI'ın güncellenmesi için kısa bir gecikme ekleyebiliriz, ancak genellikle gerekli değildir.
+    // await new Promise(resolve => setTimeout(resolve, 50));
+
+    await handleSaveProject(updatedPages, true) // This saves the updated state to Supabase
+    setIsClearPageConfirmOpen(false)
+    setMessages((prev) => [...prev, { type: "ai", content: "Mevcut sayfa temizlendi!", timestamp: new Date() }])
   }
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
   }
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault()
     const componentType = e.dataTransfer.getData("componentType")
     const rect = e.currentTarget.getBoundingClientRect()
@@ -368,7 +426,7 @@ export default function BuilderPage() {
           type: "input",
           x,
           y,
-          props: { placeholder: "Yeni Input", type: "text", width: 250, height: 40 },
+          props: { placeholder: "Yeni Input", type: "text", value: "", width: 250, height: 40 }, // Yeni: value eklendi
         }
         break
       case "card":
@@ -380,18 +438,34 @@ export default function BuilderPage() {
           props: { title: "Yeni Kart", content: "Kart içeriği...", width: 300, height: 200 },
         }
         break
+      case "div":
+        newComponent = {
+          id,
+          type: "div",
+          x,
+          y,
+          props: {
+            className: "w-64 h-32 bg-blue-100 border border-blue-300 rounded-md flex items-center justify-center",
+            width: 256,
+            height: 128,
+          },
+          children: [],
+        }
+        break
       default:
         break
     }
 
     if (newComponent) {
-      setPages((prev) => ({
-        ...prev,
+      const updatedPages = {
+        ...pages,
         [currentPageId]: {
-          ...prev[currentPageId],
-          components: [...(prev[currentPageId]?.components || []), newComponent],
+          ...pages[currentPageId],
+          components: [...(pages[currentPageId]?.components || []), newComponent],
         },
-      }))
+      }
+      setPages(updatedPages)
+      await handleSaveProject(updatedPages, false) // Yeni bileşen eklendikten sonra kaydet (mesaj gösterme)
       setMessages((prev) => [
         ...prev,
         { type: "ai", content: `${componentType} bileşeni tuvale eklendi!`, timestamp: new Date() },
@@ -402,7 +476,7 @@ export default function BuilderPage() {
   const currentSelectedComponent = selectedComponent ? canvasComponents.find((c) => c.id === selectedComponent) : null
 
   const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType: "br" | "bl" | "tr" | "tl") => {
-    e.stopPropagation() // Prevent dragging the component itself
+    e.stopPropagation()
     const component = canvasComponents.find((c) => c.id === componentId)
     if (!component) return
 
@@ -423,31 +497,38 @@ export default function BuilderPage() {
       let newY = startTop
 
       if (handleType.includes("r")) {
-        // Right handles
         newWidth = Math.max(20, startWidth + deltaX)
       }
       if (handleType.includes("b")) {
-        // Bottom handles
         newHeight = Math.max(20, startHeight + deltaY)
       }
       if (handleType.includes("l")) {
-        // Left handles
         newWidth = Math.max(20, startWidth - deltaX)
         newX = startLeft + startWidth - newWidth
       }
       if (handleType.includes("t")) {
-        // Top handles
         newHeight = Math.max(20, startHeight - deltaY)
         newY = startTop + startHeight - newHeight
       }
 
-      updateComponentProps(componentId, { width: newWidth, height: newHeight })
-      handleComponentDrag(componentId, newX, newY)
+      // Sadece yerel state'i güncelle, kaydetme işlemi mouseUp'ta yapılacak
+      setPages((prev) => ({
+        ...prev,
+        [currentPageId]: {
+          ...prev[currentPageId],
+          components: prev[currentPageId].components.map((comp) =>
+            comp.id === componentId
+              ? { ...comp, x: newX, y: newY, props: { ...comp.props, width: newWidth, height: newHeight } }
+              : comp,
+          ),
+        },
+      }))
     }
 
-    const stopResize = () => {
+    const stopResize = async () => {
       document.removeEventListener("mousemove", doResize)
       document.removeEventListener("mouseup", stopResize)
+      await handleSaveProject(pagesRef.current, false) // Use the ref for the latest state
     }
 
     document.addEventListener("mousemove", doResize)
@@ -455,50 +536,76 @@ export default function BuilderPage() {
   }
 
   return (
-    <div className="relative flex flex-col flex-1 overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Animated Background Blobs */}
+    <div className="relative flex flex-col flex-1 overflow-hidden bg-[#0F172A]">
+      {/* Futuristic Background Effects */}
       <div className="absolute inset-0">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-slate-900/50 to-[#0F172A]" />
+
+        {/* Grid Pattern */}
         <div
-          className="absolute top-40 right-20 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse"
+          className="absolute inset-0 opacity-15"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: "50px 50px",
+          }}
+        />
+
+        {/* Glowing Effects */}
+        <div className="absolute top-20 left-20 w-96 h-96 bg-[#6366F1]/20 rounded-full blur-3xl animate-pulse"></div>
+        <div
+          className="absolute top-40 right-20 w-96 h-96 bg-[#06B6D4]/20 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "2s" }}
         ></div>
         <div
-          className="absolute bottom-20 left-40 w-96 h-96 bg-pink-500/20 rounded-full blur-3xl animate-pulse"
+          className="absolute bottom-20 left-40 w-96 h-96 bg-[#F59E0B]/15 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "4s" }}
         ></div>
         <div
-          className="absolute top-1/2 right-1/3 w-72 h-72 bg-emerald-500/15 rounded-full blur-3xl animate-pulse"
+          className="absolute top-1/2 right-1/3 w-72 h-72 bg-[#06B6D4]/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "6s" }}
         ></div>
+
+        {/* Tech Particles */}
+        <div className="absolute top-32 left-32 w-2 h-2 bg-[#6366F1] rounded-full animate-ping" />
+        <div
+          className="absolute top-60 right-40 w-1 h-1 bg-[#06B6D4] rounded-full animate-ping"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute bottom-40 left-60 w-1.5 h-1.5 bg-[#F59E0B] rounded-full animate-ping"
+          style={{ animationDelay: "3s" }}
+        />
       </div>
 
       {/* Builder Navbar */}
-      <nav className="relative z-50 bg-black/10 backdrop-blur-2xl border-b border-white/10 shadow-2xl">
+      <nav className="relative z-50 bg-[#1E293B]/95 backdrop-blur-2xl border-b border-slate-700/50 shadow-2xl">
         <div className="max-w-full mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center space-x-3 group cursor-pointer">
               <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg">
-                  <Sparkles className="w-7 h-7 text-white animate-spin-slow" />
+                <div className="w-12 h-12 bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] rounded-xl flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-lg shadow-indigo-500/25">
+                  <Brain className="w-7 h-7 text-white animate-pulse" />
                 </div>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center animate-bounce">
-                  <Crown className="w-3 h-3 text-white" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-[#F59E0B] to-[#D97706] rounded-full flex items-center justify-center animate-bounce">
+                  <Cpu className="w-3 h-3 text-white" />
                 </div>
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] bg-clip-text text-transparent">
                   AI Builder Pro
                 </h1>
-                <p className="text-xs text-white/60">Builder Ekranı</p>
+                <p className="text-xs text-slate-400">Quantum Builder Interface</p>
               </div>
             </div>
 
             {/* Builder Actions */}
             <div className="flex items-center space-x-4">
               {/* Page Tabs */}
-              <div className="flex items-center space-x-2 bg-white/5 border border-white/10 rounded-lg p-1">
+              <div className="flex items-center space-x-2 bg-slate-800/50 border border-slate-700/50 rounded-lg p-1 backdrop-blur-sm">
                 {Object.entries(pages).map(([pageId, pageData]) => (
                   <div key={pageId} className="relative group">
                     {editingPageId === pageId ? (
@@ -511,7 +618,7 @@ export default function BuilderPage() {
                             setEditingPageId(null)
                           }
                         }}
-                        className="h-8 px-2 py-1 text-sm bg-white/20 border-white/30 text-white focus:ring-purple-500"
+                        className="h-8 px-2 py-1 text-sm bg-slate-800/70 border-slate-600/50 text-[#F8FAFC] focus:ring-[#6366F1]"
                         autoFocus
                       />
                     ) : (
@@ -519,9 +626,9 @@ export default function BuilderPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => handleSwitchPage(pageId)}
-                        onDoubleClick={() => setEditingPageId(pageId)} // Çift tıklama ile düzenleme
-                        className={`text-white/80 hover:bg-white/10 hover:text-white transition-colors duration-200 ${
-                          currentPageId === pageId ? "bg-white/15 text-white font-semibold" : ""
+                        onDoubleClick={() => setEditingPageId(pageId)}
+                        className={`text-slate-300 hover:bg-slate-700/50 hover:text-[#F8FAFC] transition-colors duration-200 ${
+                          currentPageId === pageId ? "bg-slate-700/70 text-[#F8FAFC] font-semibold" : ""
                         }`}
                       >
                         {pageData.name}
@@ -544,7 +651,7 @@ export default function BuilderPage() {
                 ))}
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-green-500 to-emerald-500 hover:scale-105 transition-all duration-200 shadow-lg ml-2"
+                  className="bg-gradient-to-r from-[#06B6D4] to-[#0891B2] hover:scale-105 transition-all duration-200 shadow-lg ml-2"
                   onClick={handleNewPage}
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -555,8 +662,8 @@ export default function BuilderPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:scale-105 transition-all duration-200"
-                onClick={handleSaveProject}
+                className="text-slate-300 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
+                onClick={() => handleSaveProject(pages, true)} // Manuel kaydetmede mesaj göster
               >
                 <Save className="w-4 h-4 mr-2" />
                 Kaydet
@@ -564,7 +671,7 @@ export default function BuilderPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:scale-105 transition-all duration-200"
+                className="text-slate-300 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
                 onClick={handleLoadProject}
               >
                 <FolderOpen className="w-4 h-4 mr-2" />
@@ -573,7 +680,7 @@ export default function BuilderPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:scale-105 transition-all duration-200"
+                className="text-slate-300 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
               >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
@@ -581,7 +688,7 @@ export default function BuilderPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:scale-105 transition-all duration-200"
+                className="text-slate-300 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
                 onClick={handleExportCode}
               >
                 <Download className="w-4 h-4 mr-2" />
@@ -590,7 +697,7 @@ export default function BuilderPage() {
               <Button
                 size="sm"
                 variant="ghost"
-                className="text-white hover:bg-white/10 hover:scale-105 transition-all duration-200"
+                className="text-slate-300 hover:bg-slate-800/50 hover:scale-105 transition-all duration-200"
               >
                 <Settings className="w-4 h-4 mr-2" />
                 Ayarlar
@@ -613,26 +720,26 @@ export default function BuilderPage() {
         {/* Left Panel - AI Chat & Component Library */}
         <div className="w-1/4 animate-slide-in-left flex flex-col gap-6">
           {/* AI Chat Card - flex-1 ile kalan alanı doldurmasını sağladık */}
-          <Card className="flex-1 bg-black/20 backdrop-blur-2xl border-white/10 shadow-2xl hover:shadow-purple-500/10 transition-all duration-300 flex flex-col">
-            <div className="p-6 border-b border-white/10">
+          <Card className="flex-1 bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col">
+            <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center space-x-3">
                 <div className="relative">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center animate-pulse">
+                  <div className="w-12 h-12 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-indigo-500/25">
                     <Bot className="w-7 h-7 text-white" />
                   </div>
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-ping"></div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-[#06B6D4] rounded-full border-2 border-[#1E293B] animate-ping"></div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-white">AI Asistan</h2>
-                  <p className="text-sm text-white/60 flex items-center">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                    Aktif ve Hazır
+                  <h2 className="text-xl font-semibold text-[#F8FAFC]">AI Asistan</h2>
+                  <p className="text-sm text-slate-400 flex items-center">
+                    <span className="w-2 h-2 bg-[#06B6D4] rounded-full mr-2 animate-pulse"></span>
+                    Quantum Aktif
                   </p>
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 p-6 overflow-y-auto">
+            <div className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-280px)]">
               <div className="space-y-4">
                 {messages.map((message, index) => (
                   <div
@@ -646,8 +753,8 @@ export default function BuilderPage() {
                         <div
                           className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg ${
                             message.type === "user"
-                              ? "bg-gradient-to-r from-cyan-500 to-blue-500"
-                              : "bg-gradient-to-r from-purple-500 to-pink-500"
+                              ? "bg-gradient-to-r from-[#06B6D4] to-[#0891B2]"
+                              : "bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]"
                           }`}
                         >
                           {message.type === "user" ? (
@@ -659,8 +766,8 @@ export default function BuilderPage() {
                         <div
                           className={`rounded-2xl p-4 shadow-lg backdrop-blur-sm ${
                             message.type === "user"
-                              ? "bg-gradient-to-r from-cyan-500/90 to-blue-500/90 text-white"
-                              : "bg-white/10 text-white border border-white/20"
+                              ? "bg-gradient-to-r from-[#06B6D4]/90 to-[#0891B2]/90 text-white"
+                              : "bg-slate-800/70 text-[#F8FAFC] border border-slate-700/50"
                           }`}
                         >
                           <p className="text-sm leading-relaxed">{message.content}</p>
@@ -672,18 +779,18 @@ export default function BuilderPage() {
                 {isGenerating && (
                   <div className="flex justify-start animate-fade-in">
                     <div className="flex items-start space-x-3">
-                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg">
+                      <div className="w-8 h-8 bg-gradient-to-r from-[#6366F1] to-[#8B5CF6] rounded-full flex items-center justify-center shadow-lg">
                         <Bot className="w-4 h-4 text-white" />
                       </div>
-                      <div className="bg-white/10 rounded-2xl p-4 border border-white/20 backdrop-blur-sm">
+                      <div className="bg-slate-800/70 rounded-2xl p-4 border border-slate-700/50 backdrop-blur-sm">
                         <div className="flex space-x-1">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                          <div className="w-2 h-2 bg-[#6366F1] rounded-full animate-bounce"></div>
                           <div
-                            className="w-2 h-2 bg-pink-400 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-[#06B6D4] rounded-full animate-bounce"
                             style={{ animationDelay: "0.1s" }}
                           ></div>
                           <div
-                            className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"
+                            className="w-2 h-2 bg-[#F59E0B] rounded-full animate-bounce"
                             style={{ animationDelay: "0.2s" }}
                           ></div>
                         </div>
@@ -694,10 +801,10 @@ export default function BuilderPage() {
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/10">
+            <div className="p-6 border-t border-slate-700/50">
               <div className="mb-4">
-                <p className="text-xs text-white/60 mb-3 flex items-center">
-                  <Sparkles className="w-3 h-3 mr-1" />
+                <p className="text-xs text-slate-400 mb-3 flex items-center">
+                  <Brain className="w-3 h-3 mr-1" />
                   Hızlı başlangıç örnekleri:
                 </p>
                 <div className="grid grid-cols-1 gap-2">
@@ -706,7 +813,7 @@ export default function BuilderPage() {
                       key={example}
                       size="sm"
                       variant="outline"
-                      className="text-xs bg-white/5 border-white/20 text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 justify-start"
+                      className="text-xs bg-slate-800/50 border-slate-700/50 text-slate-300 hover:bg-slate-700/50 hover:scale-105 transition-all duration-200 justify-start"
                       onClick={() => setPrompt(example)}
                     >
                       <Zap className="w-3 h-3 mr-2" />
@@ -720,17 +827,17 @@ export default function BuilderPage() {
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   placeholder="Hangi bileşeni oluşturmak istiyorsun?"
-                  className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all backdrop-blur-sm"
+                  className="bg-slate-800/50 border-slate-700/50 text-[#F8FAFC] placeholder:text-slate-400 focus:bg-slate-800/70 focus:border-[#6366F1] transition-all backdrop-blur-sm"
                   onKeyPress={(e) => e.key === "Enter" && handleGenerate()}
                 />
                 <Button
                   onClick={handleGenerate}
                   disabled={isGenerating}
-                  className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600 hover:scale-105 transition-all duration-200 shadow-lg"
+                  className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] hover:from-indigo-600 hover:to-cyan-600 hover:scale-105 transition-all duration-200 shadow-lg shadow-indigo-500/25"
                 >
                   {isGenerating ? (
                     <div className="animate-spin">
-                      <Sparkles className="w-4 h-4" />
+                      <Brain className="w-4 h-4" />
                     </div>
                   ) : (
                     <Send className="w-4 h-4" />
@@ -740,37 +847,58 @@ export default function BuilderPage() {
             </div>
           </Card>
 
-          {/* Component Library Card - flex-1 ile kalan alanı doldurmasını sağladık */}
+          {/* Component Library Card */}
           <ComponentLibrary className="flex-1" />
         </div>
 
         {/* Center - Canvas */}
         <div className="flex-1 animate-scale-in">
-          <Card className="h-full bg-white border-2 border-gray-300 shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
+          <Card className="h-full bg-white border-2 border-gray-300 shadow-xl hover:shadow-indigo-500/10 transition-all duration-300">
             <div className="p-6 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-2xl font-semibold text-gray-900 flex items-center">
-                    <Palette className="w-6 h-6 mr-2 text-purple-500" />
-                    Tasarım Tuvali
+                    <Palette className="w-6 h-6 mr-2 text-[#6366F1]" />
+                    Quantum Canvas
                   </h2>
                   <p className="text-sm text-gray-600 flex items-center mt-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                    <span className="w-2 h-2 bg-[#06B6D4] rounded-full mr-2 animate-pulse"></span>
                     {canvasComponents.length} bileşen • Sürükleyip konumlandırabilirsin
                   </p>
                 </div>
                 <div className="flex space-x-3">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      setPages((prev) => ({ ...prev, [currentPageId]: { ...prev[currentPageId], components: [] } }))
-                    } // Sadece aktif sayfayı temizle
-                    className="hover:scale-105 transition-all duration-200"
-                  >
-                    <Trash2 className="w-4 h-4 mr-2" />
-                    Sayfayı Temizle
-                  </Button>
+                  {/* Sayfayı Temizle butonu için AlertDialog Trigger */}
+                  <AlertDialog open={isClearPageConfirmOpen} onOpenChange={setIsClearPageConfirmOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="hover:scale-105 transition-all duration-200 bg-transparent"
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Sayfayı Temizle
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-[#1E293B]/95 backdrop-blur-xl border-slate-700/50 text-[#F8FAFC]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="text-[#F8FAFC]">Sayfayı Temizle</AlertDialogTitle>
+                        <AlertDialogDescription className="text-slate-300">
+                          Mevcut sayfadaki tüm bileşenleri silmek istediğine emin misin? Bu işlem geri alınamaz.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="bg-slate-800/50 text-slate-300 hover:bg-slate-700/50 border-slate-600/50">
+                          Hayır, İptal Et
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={confirmClearPage}
+                          className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                          Evet, Sil
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             </div>
@@ -781,9 +909,9 @@ export default function BuilderPage() {
                 className="absolute inset-0 opacity-30"
                 style={{
                   backgroundImage: `
-                    linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
-                    linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px)
-                  `,
+                  linear-gradient(rgba(99, 102, 241, 0.1) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(99, 102, 241, 0.1) 1px, transparent 1px)
+                `,
                   backgroundSize: "20px 20px",
                 }}
               ></div>
@@ -793,7 +921,7 @@ export default function BuilderPage() {
                 {canvasComponents.map((component) => (
                   <div
                     key={component.id}
-                    className="absolute cursor-move group hover:z-10"
+                    className="absolute cursor-move group hover:z-10 flex items-center justify-center"
                     style={{
                       left: component.x,
                       top: component.y,
@@ -813,17 +941,17 @@ export default function BuilderPage() {
                         handleComponentDrag(component.id, newX, newY)
                       }
 
-                      const handleMouseUp = () => {
+                      const handleMouseUp = async () => {
                         document.removeEventListener("mousemove", handleMouseMove)
                         document.removeEventListener("mouseup", handleMouseUp)
+                        await handleSaveProject(pagesRef.current, false) // Use the ref for the latest state
                       }
 
                       document.addEventListener("mousemove", handleMouseMove)
                       document.addEventListener("mouseup", handleMouseUp)
                     }}
                   >
-                    {renderComponent(component, selectedComponent === component.id, handleSwitchPage)}{" "}
-                    {/* handleSwitchPage eklendi */}
+                    {renderComponent(component, selectedComponent === component.id, handleSwitchPage)}
                     {/* Enhanced Component Controls */}
                     {selectedComponent === component.id && (
                       <>
@@ -853,19 +981,19 @@ export default function BuilderPage() {
                         </div>
                         {/* Resize Handles */}
                         <div
-                          className="absolute w-3 h-3 bg-purple-500 border border-white rounded-full cursor-nwse-resize -top-1 -left-1"
+                          className="absolute w-3 h-3 bg-[#6366F1] border border-white rounded-full cursor-nwse-resize -top-1 -left-1 shadow-lg"
                           onMouseDown={(e) => handleResizeStart(e, component.id, "tl")}
                         />
                         <div
-                          className="absolute w-3 h-3 bg-purple-500 border border-white rounded-full cursor-nesw-resize -top-1 -right-1"
+                          className="absolute w-3 h-3 bg-[#6366F1] border border-white rounded-full cursor-nesw-resize -top-1 -right-1 shadow-lg"
                           onMouseDown={(e) => handleResizeStart(e, component.id, "tr")}
                         />
                         <div
-                          className="absolute w-3 h-3 bg-purple-500 border border-white rounded-full cursor-nesw-resize -bottom-1 -left-1"
+                          className="absolute w-3 h-3 bg-[#6366F1] border border-white rounded-full cursor-nesw-resize -bottom-1 -left-1 shadow-lg"
                           onMouseDown={(e) => handleResizeStart(e, component.id, "bl")}
                         />
                         <div
-                          className="absolute w-3 h-3 bg-purple-500 border border-white rounded-full cursor-nwse-resize -bottom-1 -right-1"
+                          className="absolute w-3 h-3 bg-[#6366F1] border border-white rounded-full cursor-nwse-resize -bottom-1 -right-1 shadow-lg"
                           onMouseDown={(e) => handleResizeStart(e, component.id, "br")}
                         />
                       </>
@@ -878,32 +1006,32 @@ export default function BuilderPage() {
                     <div className="text-center">
                       <div className="relative mb-8">
                         <div className="animate-bounce-slow">
-                          <Sparkles className="w-24 h-24 text-purple-400 mx-auto" />
+                          <Brain className="w-24 h-24 text-[#6366F1] mx-auto" />
                         </div>
                         <div className="absolute -top-2 -right-2 animate-ping">
-                          <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
+                          <div className="w-6 h-6 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full"></div>
                         </div>
                       </div>
-                      <h3 className="text-2xl font-bold text-gray-900 mb-3">AI Sihri Başlasın!</h3>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-3">AI Quantum Sihri Başlasın!</h3>
                       <p className="text-gray-600 mb-6 max-w-md">
                         AI asistanına ne yapmak istediğini söyle,
                         <br />
                         burada otomatik olarak oluşsun!
                       </p>
                       <div className="flex space-x-3 justify-center mb-4">
-                        <div className="w-4 h-4 bg-purple-500 rounded-full animate-pulse"></div>
+                        <div className="w-4 h-4 bg-[#6366F1] rounded-full animate-pulse"></div>
                         <div
-                          className="w-4 h-4 bg-pink-500 rounded-full animate-pulse"
+                          className="w-4 h-4 bg-[#06B6D4] rounded-full animate-pulse"
                           style={{ animationDelay: "0.5s" }}
                         ></div>
                         <div
-                          className="w-4 h-4 bg-cyan-500 rounded-full animate-pulse"
+                          className="w-4 h-4 bg-[#F59E0B] rounded-full animate-pulse"
                           style={{ animationDelay: "1s" }}
                         ></div>
                       </div>
-                      <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white">
+                      <Badge className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] text-white">
                         <Rocket className="w-3 h-3 mr-1" />
-                        Sınırsız Yaratıcılık
+                        Quantum Yaratıcılık
                       </Badge>
                     </div>
                   </div>
@@ -915,13 +1043,13 @@ export default function BuilderPage() {
 
         {/* Right Panel - Component Info & Properties */}
         <div className="w-1/4 animate-slide-in-right">
-          <Card className="h-full bg-black/20 backdrop-blur-2xl border-white/10 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col">
-            <div className="p-6 border-b border-white/10">
+          <Card className="h-full bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col">
+            <div className="p-6 border-b border-slate-700/50">
               <div className="flex items-center space-x-3">
-                <Code className="w-6 h-6 text-cyan-400" />
+                <Code className="w-6 h-6 text-[#06B6D4]" />
                 <div>
-                  <h2 className="text-xl font-semibold text-white">Bileşen Bilgisi</h2>
-                  <p className="text-sm text-white/60">Detaylar ve özellikler</p>
+                  <h2 className="text-xl font-semibold text-[#F8FAFC]">Bileşen Bilgisi</h2>
+                  <p className="text-sm text-slate-400">Quantum detaylar ve özellikler</p>
                 </div>
               </div>
             </div>
@@ -931,44 +1059,45 @@ export default function BuilderPage() {
                 <ComponentProperties
                   component={currentSelectedComponent}
                   onUpdate={updateComponentProps}
-                  pages={pages} // Sayfaları prop olarak gönder
+                  onDeleteComponent={deleteComponent}
+                  pages={pages}
                 />
               ) : (
                 <div className="text-center py-8">
                   <div className="relative mb-4">
-                    <Palette className="w-16 h-16 text-cyan-400 mx-auto opacity-50" />
-                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-ping"></div>
+                    <Palette className="w-16 h-16 text-[#06B6D4] mx-auto opacity-50" />
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full animate-ping"></div>
                   </div>
-                  <p className="text-white/60">Bir bileşen seç</p>
+                  <p className="text-slate-400">Bir bileşen seç</p>
                 </div>
               )}
 
-              <div className="bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 p-4 rounded-xl border border-white/20 backdrop-blur-sm">
-                <h3 className="text-white font-medium mb-3 flex items-center">
+              <div className="bg-gradient-to-r from-[#06B6D4]/20 to-[#6366F1]/20 p-4 rounded-xl border border-slate-700/50 backdrop-blur-sm">
+                <h3 className="text-[#F8FAFC] font-medium mb-3 flex items-center">
                   <Star className="w-4 h-4 mr-2" />
                   Canvas İstatistikleri
                 </h3>
                 <div className="space-y-3 text-sm">
-                  <div className="flex justify-between text-white/80">
+                  <div className="flex justify-between text-slate-300">
                     <span className="flex items-center">
                       <Users className="w-3 h-3 mr-1" />
                       Toplam Bileşen:
                     </span>
-                    <Badge className="bg-white/20 text-white">{canvasComponents.length}</Badge>
+                    <Badge className="bg-slate-700/50 text-[#F8FAFC]">{canvasComponents.length}</Badge>
                   </div>
-                  <div className="flex justify-between text-white/80">
+                  <div className="flex justify-between text-slate-300">
                     <span className="flex items-center">
                       <Zap className="w-3 h-3 mr-1" />
                       Seçili:
                     </span>
-                    <Badge className="bg-white/20 text-white">{selectedComponent ? "1" : "0"}</Badge>
+                    <Badge className="bg-slate-700/50 text-[#F8FAFC]">{selectedComponent ? "1" : "0"}</Badge>
                   </div>
-                  <div className="flex justify-between text-white/80">
+                  <div className="flex justify-between text-slate-300">
                     <span className="flex items-center">
                       <Rocket className="w-3 h-3 mr-1" />
                       Durum:
                     </span>
-                    <Badge className="bg-green-500/20 text-green-400 border border-green-500/30">Aktif</Badge>
+                    <Badge className="bg-[#06B6D4]/20 text-[#06B6D4] border border-[#06B6D4]/30">Quantum Aktif</Badge>
                   </div>
                 </div>
               </div>
@@ -979,18 +1108,18 @@ export default function BuilderPage() {
 
       {/* Export Code Dialog */}
       <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] bg-black/80 backdrop-blur-xl border-white/10 text-white">
+        <DialogContent className="sm:max-w-[800px] bg-[#1E293B]/95 backdrop-blur-xl border-slate-700/50 text-[#F8FAFC]">
           <DialogHeader>
-            <DialogTitle className="text-white">Oluşturulan Kod</DialogTitle>
+            <DialogTitle className="text-[#F8FAFC]">Oluşturulan Kod</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <p className="text-white/70">Aşağıdaki kodu kopyalayıp projenizde kullanabilirsiniz.</p>
-            <pre className="bg-gray-900 p-4 rounded-md text-sm overflow-auto max-h-[400px] text-green-300">
+            <p className="text-slate-300">Aşağıdaki kodu kopyalayıp projenizde kullanabilirsiniz.</p>
+            <pre className="bg-slate-900 p-4 rounded-md text-sm overflow-auto max-h-[400px] text-green-300">
               <code>{exportedCode}</code>
             </pre>
             <Button
               onClick={() => navigator.clipboard.writeText(exportedCode)}
-              className="bg-gradient-to-r from-purple-500 to-cyan-500 hover:from-purple-600 hover:to-cyan-600"
+              className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] hover:from-indigo-600 hover:to-cyan-600"
             >
               Kodu Kopyala
             </Button>
