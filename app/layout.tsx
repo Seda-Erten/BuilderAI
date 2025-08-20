@@ -8,7 +8,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "AI Builder Pro - No-Code Revolution",
   description: "Yapay zeka destekli no-code platform ile hayallerinizdeki uygulamaları dakikalar içinde oluşturun.",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/technology.png',      // Tarayıcı sekmesindeki küçük logo
+    shortcut: '/technology.png',  // Windows / tarayıcı kısayolları için
+    apple: '/technology.png',     // iOS cihazlar için
+  },
 }
 
 export default function RootLayout({
@@ -18,7 +23,6 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr">
-      {/* body'ye flex flex-col min-h-screen ekledik */}
       <body className={`${inter.className} flex flex-col min-h-screen`}>{children}</body>
     </html>
   )

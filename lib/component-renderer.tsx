@@ -7,41 +7,32 @@ import { Input } from "@/components/ui/input"
 import type { Component } from "@/lib/types"
 import { cn } from "@/lib/utils"
 
-// Button bileşeninin variant prop'unun doğru tipini almak için gerekli import'lar
-import type { VariantProps } from "class-variance-authority"
-import type { buttonVariants } from "@/components/ui/button"
-
-// Bu fonksiyon, Component tipindeki bir objeyi alıp ilgili React bileşenini render eder.
-// handleSwitchPage fonksiyonu prop olarak eklendi
-// isSelected prop'u sadece görsel geri bildirim için kullanılır, konumlandırma için değil.
 export const renderComponent = (
   component: Component,
-  isSelected: boolean, // isSelected prop'u geri eklendi
+  isSelected: boolean = false,
   handleSwitchPage?: (pageId: string) => void,
 ) => {
-  // commonClasses'ın her zaman bir string olmasını sağlıyoruz.
-  // component.props.className undefined ise boş string olarak başlar.
-  const commonClasses: string = cn(
-    component.props.className || "",
-    isSelected ? "ring-2 ring-purple-500 ring-offset-2" : "", // Seçim halkası burada uygulanıyor
-  )
-
+  const baseClasses = component.props.className || ""
+  // Seçim ring'ini kaldır - sadece temiz görünüm
+  const selectionClasses = ""
+  
   let renderedElement: React.ReactNode
 
 
   switch (component.type) {
     case "button":
-    const buttonOnClick =
-  component.props.targetPageId && handleSwitchPage
-    ? () => handleSwitchPage(component.props.targetPageId as string)
-    : undefined
+      const buttonOnClick = component.props.targetPageId && handleSwitchPage
+        ? () => handleSwitchPage(component.props.targetPageId as string)
+        : undefined
 
       renderedElement = (
         <Button
-          // variant prop'unu doğru tipe dönüştürüyoruz
-          variant={(component.props.variant as VariantProps<typeof buttonVariants>["variant"]) || "default"}
-          className={commonClasses}
+          className={cn(baseClasses, selectionClasses)}
           onClick={buttonOnClick}
+          style={{
+            width: component.props.width || 'auto',
+            height: component.props.height || 'auto'
+          }}
         >
           {component.props.text || "Button"}
         </Button>
@@ -49,7 +40,17 @@ export const renderComponent = (
       break
     case "text":
       renderedElement = (
-        <div className={cn(commonClasses, "text-base text-gray-900")}>{component.props.text || "Sample Text"}</div>
+        <div 
+          className={cn(baseClasses, selectionClasses)}
+          style={{
+            width: component.props.width || 'auto',
+            height: component.props.height || 'auto',
+            display: 'flex',
+            alignItems: 'center'
+          }}
+        >
+          {component.props.text || "Sample Text"}
+        </div>
       )
       break
     case "input":
@@ -57,46 +58,71 @@ export const renderComponent = (
         <Input
           type={component.props.type || "text"}
           placeholder={component.props.placeholder || "Enter text..."}
-          value={component.props.value || ""} // Yeni: value prop'u eklendi
-          onChange={() => {}} // Yeni: onChange prop'u eklendi (değer özellikler panelinden güncellenecek)
-          className={commonClasses}
+          value={component.props.value || ""}
+          onChange={() => {}}
+          className={cn(baseClasses, selectionClasses)}
+          style={{
+            width: component.props.width || 'auto',
+            height: component.props.height || 'auto'
+          }}
         />
       )
       break
     case "card":
       renderedElement = (
-        <Card className={cn(commonClasses, "p-6 rounded-xl shadow-lg border border-gray-200 max-w-sm")}>
-          <h3 className="text-xl font-semibold mb-3">{component.props.title || "Card Title"}</h3>
-          <p className="text-gray-600">{component.props.content || "Card content goes here..."}</p>
-          {/* Card içindeki çocukları render et */}
-          {component.children && (
-            <div className="mt-4">
-              {component.children.map((child) => (
-                <React.Fragment key={child.id}>{renderComponent(child, isSelected, handleSwitchPage)}</React.Fragment>
-              ))}
+        <Card 
+          className={cn(baseClasses, selectionClasses, "relative overflow-hidden")}
+          style={{
+            width: component.props.width || 'auto',
+            height: component.props.height || 'auto'
+          }}
+        >
+          {component.children && component.children.map((child) => (
+            <div
+              key={child.id}
+              className="absolute"
+              style={{
+                left: child.x || 0,
+                top: child.y || 0
+              }}
+            >
+              {renderComponent(child, false, handleSwitchPage)}
             </div>
-          )}
+          ))}
         </Card>
       )
       break
-    case "div": // Yeni div bileşeni
+    case "div":
       renderedElement = (
-        <div className={commonClasses}>
-          {component.children &&
-            component.children.map((child) => (
-              <React.Fragment key={child.id}>{renderComponent(child, isSelected, handleSwitchPage)}</React.Fragment>
-            ))}
+        <div 
+          className={cn(baseClasses, selectionClasses, "relative")}
+          style={{
+            width: component.props.width || 'auto',
+            height: component.props.height || 'auto'
+          }}
+        >
+          {component.children && component.children.map((child) => (
+            <div
+              key={child.id}
+              className="absolute"
+              style={{
+                left: child.x || 0,
+                top: child.y || 0
+              }}
+            >
+              {renderComponent(child, false, handleSwitchPage)}
+            </div>
+          ))}
         </div>
       )
       break
     default:
       renderedElement = (
-        <div className={cn(commonClasses, "bg-gray-100 p-4 rounded border-2 border-dashed border-gray-300")}>
-          Unknown Component
+        <div className={cn(baseClasses, selectionClasses, "bg-gray-100 p-4 rounded border-2 border-dashed border-gray-300")}>
+          Unknown Component: {component.type}
         </div>
       )
   }
 
-  // renderComponent artık doğrudan bileşeni döndürüyor, konumlandırma dışarıda yapılacak.
   return renderedElement
 }

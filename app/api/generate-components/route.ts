@@ -4,7 +4,7 @@ import type { Component } from "@/lib/types"
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json()
+    const { prompt, generationMode } = await req.json()
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })

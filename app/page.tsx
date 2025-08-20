@@ -98,17 +98,15 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="flex items-center space-x-3 group">
-              <div className="w-10 h-10 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/25">
-                <Code className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-[#6366F1] to-[#06B6D4] bg-clip-text text-transparent">
-                  AI Builder
-                </h1>
-                <p className="text-xs text-slate-400">Future of No-Code</p>
-              </div>
-            </Link>
+            
+<Link href="/" className="flex items-center group">
+  <div className="w-12 h-10 rounded-lg flex items-center justify-center">
+    <img src="/technology.png" alt="AI Builder Logo" className="w-18 h-12" />
+  </div>
+  <h1 className="ml-2 text-xl font-bold bg-gradient-to-r from-[#6366F1] to-[#06B6D4] bg-clip-text text-transparent">
+    AI Builder
+  </h1>
+</Link>
 
             {/* Navigation */}
             <div className="hidden md:flex items-center space-x-8">
@@ -219,15 +217,6 @@ export default function LandingPage() {
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
-
-              <Button
-                variant="outline"
-                size="lg"
-                className="px-8 py-3 border-slate-600 text-slate-300 bg-[#1E293B]/50 hover:bg-[#1E293B] hover:border-[#6366F1] hover:text-[#6366F1] transition-all backdrop-blur-sm"
-              >
-                <Play className="w-5 h-5 mr-2" />
-                Demo İzle
-              </Button>
             </div>
           </motion.div>
 
@@ -595,9 +584,6 @@ export default function LandingPage() {
 
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row items-center justify-between">
             <div className="text-slate-400 text-sm mb-4 md:mb-0">© 2024 AI Builder Future. Tüm hakları saklıdır.</div>
-            <div className="flex items-center text-slate-400 text-sm">
-              Türkiye'de <Heart className="w-4 h-4 mx-1 text-red-500" /> ve AI ile yapıldı
-            </div>
           </div>
         </div>
       </footer>
