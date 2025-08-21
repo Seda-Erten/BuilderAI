@@ -59,8 +59,7 @@ async function generateShadcnProps() {
         }
 
         // Basit regex ile prop'ları ve tiplerini çıkarmaya çalış
-        // Örnek: export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> { ... }
-        // veya export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> { ... }
+
         const interfaceMatch = fileContent.match(/export interface (\w+Props) extends [^{]+?\{([\s\S]*?)\}/)
 
         if (interfaceMatch) {
@@ -108,10 +107,10 @@ async function generateShadcnProps() {
           }
         }
 
-        // Özel olarak eklediğimiz prop'ları (width, height, targetPageId) her bileşene ekle
-        // Bu, AI'nın bu prop'ları her zaman kullanabileceğini bilmesini sağlar.
-        // Ancak, bu prop'lar sadece belirli bileşen tipleri için anlamlıdır.
-        // AI'nın bunu prompt'tan anlaması gerekecek.
+        // Özel olarak eklediğimiz propları her bileşene ekle
+        // Bu AI'nın bu propları her zaman kullanabileceğini bilmesini sağlar.
+        // Ancak bu proplar sadece belirli bileşen tipleri için anlamlıdır.
+        // AI nın bunu prompttan anlaması gerekecek.
         if (!componentDefinition.props.width)
           componentDefinition.props.width = { type: "number", description: "Width of the component in pixels." }
         if (!componentDefinition.props.height)

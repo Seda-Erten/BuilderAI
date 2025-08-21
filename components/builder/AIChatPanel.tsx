@@ -2,8 +2,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Bot, User, Brain, Zap, Send } from "lucide-react";
+import { Bot, User, Zap, Send } from "lucide-react";
+import Image from "next/image";
 import { Message } from "@/lib/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 interface AIChatPanelProps {
   messages: Message[];
@@ -14,12 +17,16 @@ interface AIChatPanelProps {
   handleGenerate: () => void;
   generationMode: "full" | "sections";
   setGenerationMode: (mode: "full" | "sections") => void;
+  stylePreset: "minimal" | "brand" | "dark" | "glass";
+  setStylePreset: (p: "minimal" | "brand" | "dark" | "glass") => void;
+  temperature: number;
+  setTemperature: (t: number) => void;
 }
 
-export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenerating, handleGenerate, generationMode, setGenerationMode }: AIChatPanelProps) {
+export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenerating, handleGenerate, generationMode, setGenerationMode, stylePreset, setStylePreset, temperature, setTemperature }: AIChatPanelProps) {
   return (
-    <Card className="flex-1 bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col">
-      <div className="p-4 border-b border-slate-700/50">
+    <Card className="h-full min-h-0 bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col">
+      <div className="p-4 border-b border-slate-700/50 sticky top-0 z-10 bg-[#1E293B]/95 backdrop-blur-2xl">
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-12 h-12 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-indigo-500/25">
@@ -31,14 +38,43 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
             <h2 className="text-xl font-semibold text-[#F8FAFC]">AI Asistan</h2>
             <p className="text-sm text-slate-400 flex items-center">
               <span className="w-2 h-2 bg-[#06B6D4] rounded-full mr-2 animate-pulse"></span>
-              Quantum Aktif
+              Aktif
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 p-4 overflow-y-auto">
+      <div className="flex-1 min-h-0 p-4 overflow-y-auto">
         <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-2">
+              <label className="text-xs text-slate-300">Stil Preseti</label>
+              <Select value={stylePreset} onValueChange={(v) => setStylePreset(v as any)}>
+                <SelectTrigger className="bg-slate-800/50 border-slate-700/50 text-[#F8FAFC]">
+                  <SelectValue placeholder="Minimal" />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 text-slate-100 border-slate-700">
+                  <SelectItem value="minimal">Minimal</SelectItem>
+                  <SelectItem value="brand">Brand</SelectItem>
+                  <SelectItem value="dark">Dark</SelectItem>
+                  <SelectItem value="glass">Glass</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs text-slate-300">Yaratıcılık (Sıcaklık)</label>
+                <span className="text-xs text-slate-400">{temperature.toFixed(2)}</span>
+              </div>
+              <Slider
+                value={[temperature]}
+                min={0}
+                max={1}
+                step={0.05}
+                onValueChange={(vals) => setTemperature(vals[0])}
+              />
+            </div>
+          </div>
           {messages.map((message, index) => (
             <div
               key={index}
@@ -103,11 +139,11 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
         {/* Üretim modu toggle kaldırıldı; tek mod (sections) kullanılacak */}
         <div className="mb-4">
           <p className="text-xs text-slate-400 mb-3 flex items-center">
-            <Brain className="w-3 h-3 mr-1" />
+            <Image src="/technology.png" alt="Logo" width={12} height={12} className="mr-1" />
             Hızlı başlangıç örnekleri:
           </p>
           <div className="grid grid-cols-1 gap-2">
-            {["Login formu", "Hero section", "Navbar oluştur", "Pricing kartları"].map((example) => (
+            {["Login formu", "Navbar oluştur", ].map((example) => (
               <Button
                 key={example}
                 size="sm"
@@ -136,7 +172,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
           >
             {isGenerating ? (
               <div className="animate-spin">
-                <Brain className="w-4 h-4" />
+                <Image src="/technology.png" alt="Yükleniyor" width={16} height={16} />
               </div>
             ) : (
               <Send className="w-4 h-4" />

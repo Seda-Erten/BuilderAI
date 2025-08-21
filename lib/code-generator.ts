@@ -91,6 +91,7 @@ export const generateCode = (pages: ProjectPages): string => {
   Object.entries(pages).forEach(([pageId, pageData]) => {
     jsxCode += `    '${pageId}': {
         name: '${pageData.name}',
+        backgroundColor: '${(pageData as any).backgroundColor || ""}',
         components: [\n`
     pageData.components.forEach((comp) => {
       jsxCode += `        {\n          id: '${comp.id}',\n          jsx: (\n`
@@ -108,8 +109,10 @@ export const generateCode = (pages: ProjectPages): string => {
       return <div>Sayfa bulunamadı: {currentPageId}</div>;
     }
 
+    const pageBg = currentPageData.backgroundColor || '#ffffff';
+
     return (
-      <div className="relative w-full min-h-screen bg-white p-8">
+      <div className="relative w-full min-h-screen p-8" style={{ backgroundColor: pageBg }}>
         {currentPageData.components.map(comp => (
           <React.Fragment key={comp.id}>
             {comp.jsx}

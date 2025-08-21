@@ -169,6 +169,16 @@
   .animate-text-glow {
     animation: textGlow 3s ease-in-out infinite alternate;
   }
+  /* Safelist dynamic color utilities used by AI/Properties (ensures generation) */
+  .tw-safelist-colors {
+    /* Pink/Purple families */
+    @apply bg-pink-600 text-pink-600 border-pink-300;
+    @apply bg-purple-600 text-purple-600 border-purple-300;
+    @apply bg-fuchsia-600 text-fuchsia-600 border-fuchsia-300;
+    @apply bg-rose-600 text-rose-600 border-rose-300;
+    /* Common neutral */
+    @apply bg-gray-600 text-gray-600 border-gray-300;
+  }
 }
 
 @keyframes fadeIn {

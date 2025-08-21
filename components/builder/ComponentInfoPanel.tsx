@@ -10,6 +10,7 @@ interface ComponentInfoPanelProps {
   currentPageId: string;
   updateComponentProps: (id: string, newProps: any) => void;
   deleteComponent: (id: string) => void;
+  replaceComponent?: (id: string, newType: Component["type"]) => void;
 }
 
 export function ComponentInfoPanel({
@@ -18,25 +19,35 @@ export function ComponentInfoPanel({
   currentPageId,
   updateComponentProps,
   deleteComponent,
+  replaceComponent,
 }: ComponentInfoPanelProps) {
   const canvasComponents = pages[currentPageId]?.components || [];
-  const currentSelectedComponent = selectedComponent
-    ? canvasComponents.find((c) => c.id === selectedComponent)
-    : null;
+  const findById = (list: Component[], id: string | null): Component | null => {
+    if (!id) return null;
+    for (const c of list) {
+      if (c.id === id) return c;
+      if (c.children && c.children.length) {
+        const found = findById(c.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+  const currentSelectedComponent = findById(canvasComponents, selectedComponent);
 
   return (
-    <Card className="h-full bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col">
-      <div className="p-6 border-b border-slate-700/50">
+    <Card className="h-full bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-cyan-500/10 transition-all duration-300 flex flex-col min-h-0">
+      <div className="p-6 border-b border-slate-700/50 sticky top-0 z-10 bg-[#1E293B]/95 backdrop-blur-2xl">
         <div className="flex items-center space-x-3">
           <Code className="w-6 h-6 text-[#06B6D4]" />
           <div>
             <h2 className="text-xl font-semibold text-[#F8FAFC]">Bileşen Bilgisi</h2>
-            <p className="text-sm text-slate-400">Quantum detaylar ve özellikler</p>
+            <p className="text-sm text-slate-400">Detaylar ve özellikler</p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 p-6 space-y-6 overflow-hidden">
+      <div className="flex-1 p-6 space-y-6 overflow-auto min-h-0">
         {currentSelectedComponent ? (
           <ComponentProperties
             component={currentSelectedComponent}
@@ -51,6 +62,32 @@ export function ComponentInfoPanel({
               <div className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full animate-ping"></div>
             </div>
             <p className="text-slate-400">Bir bileşen seç</p>
+          </div>
+        )}
+
+        {currentSelectedComponent && (
+          <div className="space-y-3 p-4 rounded-xl border border-slate-700/50 bg-slate-800/40">
+            <h3 className="text-[#F8FAFC] font-medium">Bileşeni Değiştir</h3>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                className="px-3 py-1.5 rounded-md border border-slate-700/60 text-slate-200 hover:bg-slate-700/40"
+                onClick={() => replaceComponent?.(currentSelectedComponent.id, "button")}
+              >
+                Butonla Değiştir
+              </button>
+              <button
+                className="px-3 py-1.5 rounded-md border border-slate-700/60 text-slate-200 hover:bg-slate-700/40"
+                onClick={() => replaceComponent?.(currentSelectedComponent.id, "text")}
+              >
+                Metinle Değiştir
+              </button>
+              <button
+                className="px-3 py-1.5 rounded-md border border-slate-700/60 text-slate-200 hover:bg-slate-700/40"
+                onClick={() => replaceComponent?.(currentSelectedComponent.id, "input")}
+              >
+                Input ile Değiştir
+              </button>
+            </div>
           </div>
         )}
 
@@ -79,7 +116,7 @@ export function ComponentInfoPanel({
                 <Rocket className="w-3 h-3 mr-1" />
                 Durum:
               </span>
-              <Badge className="bg-[#06B6D4]/20 text-[#06B6D4] border border-[#06B6D4]/30">Quantum Aktif</Badge>
+              <Badge className="bg-[#06B6D4]/20 text-[#06B6D4] border border-[#06B6D4]/30">Aktif</Badge>
             </div>
           </div>
         </div>

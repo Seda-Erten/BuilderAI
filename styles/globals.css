@@ -121,3 +121,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Safelist dynamic color utilities that may only appear at runtime (from AI/Properties panel).
+   Referencing them here ensures Tailwind v4 generates the styles. */
+@layer utilities {
+  .tw-safelist-colors {
+    /* Pink/Purple families */
+    @apply bg-pink-600 text-pink-600 border-pink-300;
+    @apply bg-purple-600 text-purple-600 border-purple-300;
+    @apply bg-fuchsia-600 text-fuchsia-600 border-fuchsia-300;
+    @apply bg-rose-600 text-rose-600 border-rose-300;
+    /* Common neutrals just in case */
+    @apply bg-gray-600 text-gray-600 border-gray-300;
+  }
+}

@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Brain, User, Mail, Lock, Loader2, Shield, Zap, ArrowRight } from "lucide-react"
+import { User, Mail, Lock, Loader2, Shield, Zap, ArrowRight } from "lucide-react"
+import Image from "next/image"
 import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
@@ -90,15 +91,15 @@ export default function AuthPage() {
 
       <Card className="relative z-10 w-full max-w-md bg-[#1E293B]/95 backdrop-blur-xl border-slate-700/50 shadow-2xl shadow-indigo-500/10">
         <CardHeader className="text-center pb-6">
-          <div className="w-20 h-20 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/25">
-            <Brain className="w-10 h-10 text-white animate-pulse" />
+          <div className="w-20 h-20 bg-gradient-to-r from-[#9dd6e0] to-[#98ddea] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-500/25">
+            <Image src="/technology.png" alt="Logo" width={40} height={40} className="animate-pulse" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] bg-clip-text text-transparent">
             {isLogin ? "Giriş Yap" : "Kayıt Ol"}
           </CardTitle>
           <CardDescription className="text-slate-300 mt-2 flex items-center justify-center">
             <Shield className="w-4 h-4 mr-2 text-[#06B6D4]" />
-            AI Builder Pro'ya hoş geldin!
+            AI Builder'a hoş geldin!
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -193,7 +194,7 @@ export default function AuthPage() {
           <div className="mt-6 p-3 bg-gradient-to-r from-[#6366F1]/10 to-[#06B6D4]/10 border border-[#6366F1]/20 rounded-lg backdrop-blur-sm">
             <div className="flex items-center text-xs text-slate-300">
               <Shield className="w-3 h-3 mr-2 text-[#06B6D4]" />
-              Quantum güvenlik ile korumalı
+              Güvenlikle korumalı
             </div>
           </div>
         </CardContent>

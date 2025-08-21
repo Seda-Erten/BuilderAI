@@ -164,7 +164,35 @@ export function ComponentProperties({ component, onUpdate, onDeleteComponent, pa
             Seçili Bileşen: <span className="font-bold capitalize">{component.type}</span>
           </p>
         </div>
-        {Object.entries(component.props).map(([key, value]) => (
+        {/* Always show className editor to allow styling/color changes */}
+        <div className="space-y-2">
+          <Label htmlFor={`${component.id}-className`} className="text-white/80 flex items-center capitalize">
+            {getIconForProp("className")}
+            className:
+          </Label>
+          {renderPropInput("className", (component.props as any)?.className ?? "")}
+        </div>
+        {(["div", "card"].includes(component.type)) && (
+          <div className="space-y-2">
+            <Label htmlFor={`${component.id}-layoutMode`} className="text-white/80 flex items-center capitalize">
+              {getIconForProp("layoutMode")}
+              Yerleşim Modu (layoutMode):
+            </Label>
+            <Select
+              value={(component.props as any).layoutMode || "flow"}
+              onValueChange={(val) => onUpdate(component.id, { layoutMode: val })}
+            >
+              <SelectTrigger className="w-full bg-white/10 border-white/20 text-white focus:ring-purple-500">
+                <SelectValue placeholder="Mod Seç" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectItem value="flow">Flow (flex/grid - sıralama)</SelectItem>
+                <SelectItem value="free">Free (serbest sürükleme)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+        {Object.entries(component.props).filter(([key]) => key !== "className").map(([key, value]) => (
           <div key={key} className="space-y-2">
             <Label htmlFor={`${component.id}-${key}`} className="text-white/80 flex items-center capitalize">
               {getIconForProp(key)}

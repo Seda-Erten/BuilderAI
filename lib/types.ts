@@ -4,7 +4,7 @@
 export interface Component {
   id: string
   type: string
-  x: number // x ve y, ana tuval üzerindeki konumlandırma için kalacak, ancak AI daha çok layout sınıflarını kullanacak
+  x: number
   y: number
   props: {
     text?: string
@@ -34,6 +34,7 @@ export interface ProjectPages {
   [pageId: string]: {
     name: string // Sayfa adı eklendi
     components: Component[]
+    backgroundColor?: string // Sayfa arka plan rengi (örn: #ffffff veya Tailwind arbitrary: bg-[#ff0000])
   }
 }
 

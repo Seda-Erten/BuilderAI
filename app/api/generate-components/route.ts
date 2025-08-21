@@ -4,13 +4,13 @@ import type { Component } from "@/lib/types"
 
 export async function POST(req: Request) {
   try {
-    const { prompt, generationMode } = await req.json()
+    const { prompt, generationMode, stylePreset, temperature } = await req.json()
 
     if (!prompt) {
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 })
     }
 
-    const aiResponse = await generateComponent(prompt)
+    const aiResponse = await generateComponent(prompt, { generationMode, stylePreset, temperature })
 
     if (!aiResponse.success) {
       return NextResponse.json({ error: aiResponse.message }, { status: 500 })

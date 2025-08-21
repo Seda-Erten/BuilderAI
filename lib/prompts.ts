@@ -60,7 +60,7 @@ export const getExampleComponent = (prompt: string): { typeHint: string; example
       props: { className: "bg-white rounded-lg shadow-md p-6", width: 320, height: 220 },
       children: [
         { id: "email-1", type: "input", x: 0, y: 0, props: { placeholder: "Email", type: "email", className: "w-64 h-10 border rounded-md px-3", width: 256, height: 40 } },
-        { id: "submit-1", type: "button", x: 0, y: 56, props: { text: "Giriş Yap", variant: "default", size: "default", className: "w-32 h-10 bg-blue-600 text-white rounded-md", width: 128, height: 40 } }
+        { id: "submit-1", type: "button", x: 0, y: 56, props: { text: "Giriş Yap", variant: "outline", size: "default", className: "w-32 h-10 rounded-md", width: 128, height: 40 } }
       ]
     },
     navbar: {
@@ -81,57 +81,146 @@ export const getExampleComponent = (prompt: string): { typeHint: string; example
 }
 
 // Geliştirilmiş system prompt
-export const getSystemPrompt = (typeHint: string, exampleJson: string): string => {
+export type StylePreset = "minimal" | "brand" | "dark" | "glass"
+
+export const getSystemPrompt = (typeHint: string, exampleJson: string, stylePreset?: StylePreset): string => {
   const propsGuide = buildPropsGuide()
-  return `Sen shadcn/ui ile uyumlu modern web bileşenleri oluşturan bir AI asistanısın. 
+  const presetGuide = (() => {
+    switch (stylePreset) {
+      case "brand":
+        return "Stil: Brand – canlı vurgular (bg-blue-600), ikincil alanlar nötr, CTA belirgin."
+      case "dark":
+        return "Stil: Dark – koyu zemin (bg-neutral-900), metin text-neutral-100, sınırlar border-neutral-800, focus halkaları belirgin."
+      case "glass":
+        return "Stil: Glass – yarı saydam arkaplan (bg-white/10), backdrop-blur, ince sınırlar (border-white/20), yumuşak gölgeler."
+      default:
+        return "Stil: Minimal – nötr tonlar, düşük doygunluk, sade gölgeler, geniş nefes alanları."
+    }
+  })()
+  return `Sen shadcn/ui ile uyumlu, modern ve estetik web bileşenleri oluşturan bir UI tasarım-asistanısın.
 Her zaman SADECE geçerli JSON döndür.
 
-KURALLAR:
-1) Çıktı mutlaka JSON array: [component1, component2, ...]
-2) Bileşen tipleri: "button", "text", "input", "card", "div"
-3) İç içe yapı için "children": [] kullan
-4) Zorunlu props: className, width, height. 
-   Metinsel elemanlar için text veya placeholder ekle.
-5) ID kuralı: küçük harf + tire + sayı (ör: "btn-1", "card-2").
-6) Shadcn props kullan:
+KURALLAR (VERİ ŞEMASI):
+1) Çıktı mutlaka bir JSON array olsun: [component1, component2, ...]
+2) Desteklenen tipler: "button", "text", "input", "card", "div", "badge", "avatar", "tabs", "table", "image"
+3) İç içe yapı için "children": [] kullan. Her child nesnesi de aynı şemayı izler.
+4) Zorunlu props: className, width, height.
+   - Metin için: text ("text" tipinde).
+   - Input için: placeholder ve type.
+   - Renkler: Tailwind (bg-blue-600, text-white) veya heksadesimal: bg-[#RRGGBB].
+   - Image için zorunlu: src (tam URL veya "/public" klasörü altında bir yol, örn: "/placeholder-logo.svg"), alt (string).
+5) ID kuralı: küçük-harf + tire + sayı (örn: "btn-1", "card-2").
+6) Shadcn props:
    - button → { variant: "default"|"secondary"|"destructive"|"outline"|"ghost"|"link", size: "default"|"sm"|"lg"|"icon" }
    - input  → { type: "text"|"email"|"password"|"number", placeholder: string }
-7) Tailwind stil rehberi:
-   - spacing: p-4, p-6, gap-4
-   - border: border, border-gray-200
-   - shadow: shadow-sm, shadow-md
-   - radius: rounded-md, rounded-lg
-   - renkler: bg-blue-600, text-white, text-gray-900
+
+TAILWIND TASARIM SİSTEMİ:
+- Spacing: p-4/p-6, gap-3/gap-4/gap-6, m-*, px-*, py-*.
+- Kenarlık: border, border-gray-200|300 (nötr), gerektiğinde border-transparent.
+- Gölgeler: shadow-sm|md, hover:shadow-md|lg (ince geçiş).
+- Radius: rounded-md|lg|xl. Kartlarda tercihen rounded-xl.
+- Tipografi: text-[13px|14px|16px|20px|24px], font-medium|semibold, leading-snug|relaxed.
+- Renk paleti (nötr taban):
+  - Arkaplan: bg-white veya yumuşak nötr; vurgu: bg-blue-600, hover:bg-blue-700.
+  - Metin: text-gray-900, ikincil: text-gray-600.
+- Durum stilleri: focus-visible:ring-2 focus-visible:ring-offset-2 (ring rengi nötr veya tema).
+
+ÖN TANIMLI BİLEŞEN STİLLERİ (eklenen tipler):
+- badge: küçük etiket, rounded-full, px-2.5 py-1, text-xs|sm; arkaplan nötr veya temaya uygun.
+- avatar: dairesel, overflow-hidden; fallback harfleri merkezde.
+- tabs: üstte sekme listesi (gap-2), altta içerik paneli; radius ve sınırlar tutarlı.
+- table: zebra şerit (odd:bg-gray-50), header kalın, hücrelerde p-3.
+
+YERLEŞİM ve DÜZEN KILAVUZU:
+- Konteyner: "div" üzerinde layout kur; children için flex veya grid kullan.
+- Dikey yığın: flex flex-col gap-3|4, çocukların y değerini 0'dan başlayarak düzenli aralıklarla artır.
+- Yatay hizalama gerektiğinde: flex items-center justify-between/center.
+- Grid: grid grid-cols-2|3 (ihtiyaca göre), gap-4|6. Kart koleksiyonları için uygundur.
+- Aşırı ekran sınıfları yok: w-full, h-screen vb. yerine genişlik/height px cinsinden.
+- Önerilen temel ölçüler: button 128x40, input 256x40, card 320x384, text 200x24, div 300x200.
+ - layoutMode kullanımı:
+   - Varsayılan: flow — ebeveyn flex/grid akışında çocukları sıralarsın (x/y kullanma).
+   - Kullanıcı "serbest/absolute/özgür" isterse: ebeveyn "div"/"card" için props.layoutMode = "free" ayarla ve çocuklara x,y koordinatları ver (absolute konumlandırma). Çocuklar çakışmasın, makul aralıklar kullan.
+ - Boyut limitleri: width 24–1200 px, height 24–800 px aralığında tut.
+ - Az ve öz: toplam bileşen sayısını 12'yi aşmayacak şekilde sınırla.
+
+ERİŞİLEBİLİRLİK ve HAREKET:
+- Kontrastı yeterli tut; odak durumunu belirgin yap (focus-visible:ring-*).
+- İnce geçişler: transition-colors, transition-shadow, duration-200.
+
+STİL KALİTESİ KILAVUZU:
+- Görsel hiyerarşi: başlık > açıklama > eylem.
+- Boşluk disiplini: iç boşluk (p-*) ve eleman aralıkları (gap-*) tutarlı.
+- Kartlarda p-6, rounded-xl, border-gray-200, shadow-sm ön tanımlı.
+- Butonlarda solid vurgu (bg-blue-600 text-white), hover:bg-blue-700, rounded-md.
+- Inputlarda belirgin sınır ve odak: border-gray-300, focus:ring-2 focus:ring-blue-500.
 
 ${propsGuide}
 
-TASARIM KILAVUZU:
-- Minimal, modern, erişilebilir (focus halkaları, kontrast uyumlu).
-- Genişlikler piksel cinsinden (button: 128x40, input: 256x40, card: 320x240, text: 200x24).
-- Aşırı büyük boyutlardan kaçın (örn: w-full, h-screen yok).
-- Bir bileşen içinde düzenli aralıklarla children yerleşsin.
+${presetGuide}
 
-ÖRNEK:
+ÖRNEK (format ve stil referansı):
 ${exampleJson}
 
 Sadece JSON döndür.`
 }
 
 // Geliştirilmiş kullanıcı prompt'u
-export const getComponentPrompt = (userRequest: string): string => {
+export const getComponentPrompt = (userRequest: string, stylePreset?: StylePreset): string => {
+  const preset = stylePreset || "minimal"
+  const lower = userRequest.toLowerCase()
+  const navbarGuide = ((): string => {
+    if (lower.includes("navbar") || lower.includes("menü") || lower.includes("navigation") || lower.includes("üst bar")) {
+      return `
+ÖZEL NAVBAR KILAVUZU:
+- NAVBAR yatay olmalıdır: flex flex-row items-center.
+- Marka/sol kısım solda, linkler ortada/sağda; spacing için gap-* veya justify-between kullan.
+- Yükseklik genelde h-14|h-16; iç boşluk px-4|px-6.
+- Ekran doldurma yerine piksel tabanlı width/height kullan.
+`
+    }
+    return ""
+  })()
   return `İstek: "${userRequest}"
 
-Kurallar:
-- Sadece geçerli JSON döndür (kod bloğu veya açıklama yok).
-- Çıktı mutlaka [component, ...] dizisi olsun.
-- Bileşen tipleri: "button", "text", "input", "card", "div".
-- Shadcn kurallarına uygun variant ve size props kullan.
-- ID'ler küçük harf + tire + sayı formatında olsun.
+ÜRETİM TALİMATI:
+- Sadece GEÇERLİ JSON döndür (kod bloğu veya açıklama yok).
+- Çıktı daima bir DİZİ olsun: [component, ...].
+- Desteklenen tipler: "button", "text", "input", "card", "div", "badge", "avatar", "tabs", "table", "image".
+- Shadcn uyumlu props kullan (button: variant/size, input: type/placeholder).
+- ID formatı: küçük-harf + tire + sayı.
 
-Kalite:
-- Modern, minimal, erişilebilir.
-- Tailwind className: p-4, gap-4, rounded-md|lg, shadow-sm|md, border-gray-200.
-- Renkler: mavi (bg-blue-600), beyaz (bg-white), gri (text-gray-900).
+KALİTE KONTROL LİSTESİ:
+- Görsel hiyerarşi net mi? (başlık > açıklama > CTA)
+- Yeterli boşluk var mı? (p-6; children arası gap-4 veya gap-6)
+- Tutarlı radius ve gölge kullanıldı mı? (rounded-xl, shadow-sm)
+- Erişilebilir odak halkaları var mı? (focus-visible:ring-2)
+- Renkler tutarlı mı? (bg-blue-600, text-white, text-gray-900)
+- Boyutlar px cinsinden mi? (w/h set edildi mi?)
+ - Bileşen sayısı 12'yi aşmıyor mu? width/height limitlere uyuyor mu?
 
-Sadece JSON döndür.`
+NOT:
+- Tam ekran sınıfları (w-full, h-screen) kullanma; piksel tabanlı ölçüler kullan.
+ - Düzeni "div" içinde flex/grid ve gap ile kurgula (flow). Absolute gerekirse aşağıyı uygula.
+ - Kullanıcı "serbest/absolute" isterse veya serbest yerleşim gerekli ise: ebeveyn "div"/"card" için props.layoutMode = "free" kullan ve çocuklara x,y ver. Aksi halde flow düzeninde kal ve x/y kullanma.
+  - Ürün kartı gibi yapılarda (görsel + başlık + açıklama + fiyat/CTA): parent için "flex flex-col gap-3" veya "gap-4" kullan; metinler görüntünün ALTINDA olmalı ve üst üste BINMEMELİ.
+  - Kullanıcı belirli renk(ler) istediyse (ör. bg-[#FF5733] veya text-red-600), o renkleri AYNEN kullan ve varsayılan siyah/mavi gibi renkleri EKLEME.
+  - Tailwind sınıfları ile renk tanımlanmadıysa, uygun nötr/tema renklerini seçebilirsin.
+  - Renk niyeti konteyner (form/section/kart/hero) içinse: rengi ÖNCE KONTEYNERA uygula (örn: card bg-red-600). CTA/Buton rengini yalnızca kullanıcı AÇIKÇA isterse değiştir; aksi takdirde nötr/outline/ghost bırak.
+
+- Kullanıcı doğal renk adı yazarsa (TR/EN), ilgili Tailwind paletine ÇEVİR ve sınıf üret (hex ZORUNLU DEĞİL):
+  Türkçe→Tailwind: kırmızı→red, mavi→blue, yeşil→green, mor→purple, turuncu→orange, sarı→yellow, pembe→pink, siyah→black, beyaz→white, gri→gray, camgöbeği→cyan, lacivert→indigo, turkuaz→teal.
+  İngilizce→Tailwind: red, blue, green, purple, orange, yellow, pink, black, white, gray, cyan, indigo, teal.
+  Gövde/zemin rengi için genelde 500–700 tonlarını (örn: bg-red-600), metin için zıt ve erişilebilir tonları seç (örn: text-white veya koyu zeminde text-neutral-100). Border için ilgili paletten 300–400 (örn: border-red-300).
+  Örnekler: "kırmızı buton" → className: "bg-red-600 text-white"; "mavi başlık" → className: "text-blue-600"; "camgöbeği etiket" → className: "bg-cyan-500 text-white".
+  Konteyner-renk örnekleri:
+   - "kırmızı login form" → kart arkaplanı: bg-red-600 text-white; buton: outline/ghost (renk talebi yoksa). 
+   - "yeşil kayıt formu" → kart arkaplanı: bg-green-600 text-white; inputlar kontrastlı; buton nötr.
+   - "kırmızı CTA butonu olan login form" → kart nötr; yalnızca buton bg-red-600.
+
+STİL PRESET: ${preset}
+${navbarGuide}
+
+Sadece JSON döndür.
+`
 }

@@ -11,6 +11,7 @@ import { Canvas } from "@/components/builder/Canvas";
 import { ComponentInfoPanel } from "@/components/builder/ComponentInfoPanel";
 import { ExportCodeDialog } from "@/components/builder/ExportCodeDialog";
 import { ComponentLibrary } from "@/components/builder/component-library";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function BuilderPage() {
   const [prompt, setPrompt] = useState("");
@@ -33,8 +34,66 @@ export default function BuilderPage() {
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [isClearPageConfirmOpen, setIsClearPageConfirmOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const router = useRouter();
   const pagesRef = useRef(pages);
+  const builderCanvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isPropsOpen, setIsPropsOpen] = useState(false);
+  const [stylePreset, setStylePreset] = useState<"minimal" | "brand" | "dark" | "glass">("minimal");
+  const [temperature, setTemperature] = useState<number>(0.35);
+
+  // Generate a collision-resistant ID for components
+  const generateUniqueId = useCallback((type: string, taken: Set<string>) => {
+    let candidate = "";
+    do {
+      const rand = typeof crypto !== "undefined" && (crypto as any).randomUUID
+        ? (crypto as any).randomUUID().slice(0, 8)
+        : Math.random().toString(36).slice(2, 10);
+      candidate = `${type}-${rand}`;
+    } while (taken.has(candidate));
+    return candidate;
+  }, []);
+
+  // Collect all ids from a tree (top-level + children)
+  const collectAllIds = useCallback((list: Component[], into?: Set<string>) => {
+    const acc = into || new Set<string>()
+    const visit = (c: Component) => {
+      if (c?.id) acc.add(c.id)
+      if (Array.isArray(c.children)) c.children.forEach(visit)
+    }
+    ;(list || []).forEach(visit)
+    return acc
+  }, [])
+
+  // Normalize a list of incoming components to guarantee unique ids (considering whole current tree)
+  const normalizeIncomingComponents = useCallback((incoming: Component[], currentList: Component[]) => {
+    const taken = collectAllIds(currentList)
+    const fixTree = (node: Component): Component => {
+      let id = node.id && !taken.has(node.id) ? node.id : generateUniqueId(node.type, taken)
+      taken.add(id)
+      const children = Array.isArray(node.children) ? node.children.map(fixTree) : undefined
+      return { ...node, id, children } as Component
+    }
+    return incoming.map(fixTree)
+  }, [collectAllIds, generateUniqueId]);
+
+  // Normalize all pages' components to ensure uniqueness after loading from storage (deep, includes children)
+  const normalizeAllPages = useCallback((incomingPages: ProjectPages): ProjectPages => {
+    const result: ProjectPages = {} as ProjectPages
+    for (const [pid, page] of Object.entries(incomingPages)) {
+      const seen = new Set<string>()
+      const fixTree = (node: Component): Component => {
+        let id = node.id && !seen.has(node.id) ? node.id : generateUniqueId(node.type, seen)
+        seen.add(id)
+        const children = Array.isArray(node.children) ? node.children.map(fixTree) : undefined
+        return { ...node, id, children } as Component
+      }
+      const comps = (page.components || []).map(fixTree)
+      result[pid] = { ...page, components: comps } as any
+    }
+    return result
+  }, [generateUniqueId])
 
   useEffect(() => {
     const checkUserAndLoadProject = async () => {
@@ -45,6 +104,7 @@ export default function BuilderPage() {
         handleLoadProject();
       }
     };
+
     checkUserAndLoadProject();
   }, [router]);
 
@@ -116,7 +176,7 @@ export default function BuilderPage() {
       const response = await fetch("/api/generate-components", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: currentPrompt, generationMode: "sections" }),
+        body: JSON.stringify({ prompt: currentPrompt, generationMode: "sections", stylePreset, temperature }),
       });
 
       if (!response.ok) {
@@ -125,7 +185,8 @@ export default function BuilderPage() {
       }
 
       const data = await response.json();
-      const newComponents: Component[] = data.components;
+      const rawComponents: Component[] = data.components;
+      const newComponents = normalizeIncomingComponents(rawComponents, pages[currentPageId]?.components || []);
 
       const updatedPages = {
         ...pages,
@@ -171,8 +232,86 @@ export default function BuilderPage() {
     }));
   };
 
+  // Nested children drag inside an absolute-positioned parent
+  const handleChildDrag = (parentId: string, childId: string, newX: number, newY: number) => {
+    const updateParentInTree = (list: Component[]): Component[] =>
+      list.map((comp) => {
+        if (comp.id === parentId) {
+          const nextChildren = (comp.children || []).map((ch) =>
+            ch.id === childId ? { ...ch, x: newX, y: newY } : ch
+          );
+          return { ...comp, children: nextChildren } as Component;
+        }
+        if (comp.children && comp.children.length > 0) {
+          return { ...comp, children: updateParentInTree(comp.children) } as Component;
+        }
+        return comp;
+      });
+
+    setPages((prev) => ({
+      ...prev,
+      [currentPageId]: {
+        ...prev[currentPageId],
+        components: updateParentInTree(prev[currentPageId].components),
+      },
+    }));
+  };
+
+  // Save after nested drag completes
+  const handleChildDragEnd = async (parentId: string, childId: string) => {
+    await handleSaveProject(pagesRef.current, false);
+  };
+
+  // Reorder children inside a flex/grid parent
+  const handleChildReorder = (parentId: string, fromIndex: number, toIndex: number) => {
+    const reorderInTree = (list: Component[]): Component[] =>
+      list.map((comp) => {
+        if (comp.id === parentId) {
+          const arr = [...(comp.children || [])];
+          if (
+            fromIndex < 0 ||
+            fromIndex >= arr.length ||
+            toIndex < 0 ||
+            toIndex >= arr.length
+          ) {
+            return comp;
+          }
+          const [moved] = arr.splice(fromIndex, 1);
+          arr.splice(toIndex, 0, moved);
+          return { ...comp, children: arr } as Component;
+        }
+        if (comp.children && comp.children.length > 0) {
+          return { ...comp, children: reorderInTree(comp.children) } as Component;
+        }
+        return comp;
+      });
+
+    const updatedComponents = reorderInTree(pages[currentPageId].components);
+    const updatedPages = {
+      ...pages,
+      [currentPageId]: {
+        ...pages[currentPageId],
+        components: updatedComponents,
+      },
+    };
+    setPages(updatedPages);
+    handleSaveProject(updatedPages, false);
+  };
+
   const deleteComponent = async (id: string) => {
-    const updatedComponents = pages[currentPageId].components.filter((comp) => comp.id !== id);
+    // Remove component with given id anywhere in the tree (top-level or nested)
+    const removeFromTree = (list: Component[]): Component[] => {
+      return list
+        .filter((comp) => comp.id !== id)
+        .map((comp) => {
+          if (Array.isArray(comp.children) && comp.children.length > 0) {
+            return { ...comp, children: removeFromTree(comp.children) } as Component;
+          }
+          return comp;
+        });
+    };
+
+    const updatedComponents = removeFromTree(pages[currentPageId].components);
     const updatedPages = {
       ...pages,
       [currentPageId]: {
@@ -190,9 +329,18 @@ export default function BuilderPage() {
 
   const updateComponentProps = useCallback(
     async (id: string, newProps: any) => {
-      const updatedComponents = pages[currentPageId].components.map((comp) =>
-        comp.id === id ? { ...comp, props: { ...comp.props, ...newProps } } : comp
-      );
+      const updateInTree = (list: Component[]): Component[] =>
+        list.map((comp) => {
+          if (comp.id === id) {
+            return { ...comp, props: { ...comp.props, ...newProps } } as Component;
+          }
+          if (comp.children && comp.children.length > 0) {
+            return { ...comp, children: updateInTree(comp.children) } as Component;
+          }
+          return comp;
+        });
+
+      const updatedComponents = updateInTree(pages[currentPageId].components);
       const updatedPages = { ...pages, [currentPageId]: { ...pages[currentPageId], components: updatedComponents } };
       setPages(updatedPages);
       await handleSaveProject(updatedPages, false);
@@ -206,8 +354,103 @@ export default function BuilderPage() {
     setIsExportDialogOpen(true);
   };
 
-  const handleOpenPreview = () => setIsPreviewOpen(true);
+  // Replace a component (top-level or nested) with a new component type while preserving position/size
+  const replaceComponent = async (targetId: string, newType: Component["type"]) => {
+    const makeNew = (type: Component["type"], base: Component): Component => {
+      const currentAllIds = collectAllIds(pages[currentPageId]?.components || [])
+      const id = generateUniqueId(type, currentAllIds)
+      const common = {
+        id,
+        type,
+        x: base.x,
+        y: base.y,
+        props: { width: base.props?.width, height: base.props?.height },
+      } as any
+      switch (type) {
+        case "button":
+          return {
+            ...common,
+            props: { ...common.props, text: "Yeni Buton", variant: "default" },
+          }
+        case "text":
+          return {
+            ...common,
+            props: { ...common.props, text: "Yeni Metin", className: "text-lg text-gray-900" },
+          }
+        case "input":
+          return {
+            ...common,
+            props: { ...common.props, placeholder: "Yeni Input", type: "text", value: "" },
+          }
+        case "card":
+          return {
+            ...common,
+            props: { ...common.props, title: "Yeni Kart", content: "Kart içeriği..." },
+            children: [],
+          }
+        case "div":
+        default:
+          return {
+            ...common,
+            props: {
+              ...common.props,
+              className: "w-64 h-32 bg-blue-100 border border-blue-300 rounded-md flex items-center justify-center",
+            },
+            children: [],
+          }
+      }
+    }
+
+    const replaceInList = (list: Component[]): { next: Component[]; newId: string | null } => {
+      let newId: string | null = null
+      const next = list.map((comp) => {
+        if (comp.id === targetId) {
+          const created = makeNew(newType, comp)
+          newId = created.id
+          return created
+        }
+        if (Array.isArray(comp.children) && comp.children.length > 0) {
+          const res = replaceInList(comp.children)
+          if (res.newId) newId = res.newId
+          return { ...comp, children: res.next } as Component
+        }
+        return comp
+      })
+      return { next, newId }
+    }
+
+    const { next, newId } = replaceInList(pages[currentPageId].components)
+    // After replacement, ensure deep-unique ids (in rare cases of collisions)
+    const tmpPages = { ...pages, [currentPageId]: { ...pages[currentPageId], components: next } }
+    const updatedPages = normalizeAllPages(tmpPages)
+    setPages(updatedPages)
+    await handleSaveProject(updatedPages, false)
+    if (newId) setSelectedComponent(newId)
+  }
+
+  const handleOpenPreview = () => {
+    // Ölç: merkez Canvas kapsayıcısının mevcut genişliği
+    const w = builderCanvasContainerRef.current?.clientWidth;
+    if (w && w > 0) {
+      setPreviewWidth(w);
+    } else {
+      setPreviewWidth(null);
+    }
+    setIsPreviewOpen(true);
+  };
   const handleClosePreview = () => setIsPreviewOpen(false);
+
+  const handleOpenPreviewNewTab = async () => {
+    try {
+      // En güncel durumu kaydet
+      await handleSaveProject(pagesRef.current, false);
+      const w = builderCanvasContainerRef.current?.clientWidth;
+      const url = `/preview?page=${encodeURIComponent(currentPageId)}${w && w > 0 ? `&w=${w}` : ""}`;
+      window.open(url, "_blank");
+    } catch (e) {
+      // sessizce geç
+    }
+  };
 
   const handleLoadProject = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -235,7 +478,8 @@ export default function BuilderPage() {
 
       if (data && data.project_data) {
         const loadedPages = data.project_data as ProjectPages;
-        setPages(loadedPages);
+        const normalized = normalizeAllPages(loadedPages);
+        setPages(normalized);
         setCurrentPageId(Object.keys(loadedPages)[0]);
         setMessages((prev) => [...prev, { type: "ai", content: "Proje başarıyla yüklendi!", timestamp: new Date() }]);
       } else {
@@ -311,7 +555,8 @@ export default function BuilderPage() {
     const y = e.clientY - rect.top;
 
     let newComponent: Component | null = null;
-    const id = `${componentType}-${Date.now()}`;
+    const existing = pages[currentPageId]?.components || [];
+    const id = generateUniqueId(componentType, new Set(existing.map((c) => c.id)));
 
     switch (componentType) {
       case "button":
@@ -466,15 +711,56 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
         handleLogout={handleLogout}
         handleOpenPreview={handleOpenPreview}
       />
-      <div className="flex-1 px-2 pb-3 pt-3 min-h-[calc(100vh-96px)] flex flex-col gap-3">
-        {/* Top: Thin horizontal Component Library */}
-        <div className="h-24 min-h-[100px] overflow-visible">
-          <ComponentLibrary className="h-full" />
-        </div>
-        <div className="flex flex-1 gap-3 min-h-0">
-          {/* Left column: AI and Component Info, equal height */}
-          <div className="w-96 shrink-0 flex flex-col gap-3 min-h-0">
-            <div className="flex-1 min-h-[360px] overflow-auto rounded-md">
+      <div className={"px-2 pb-3 pt-3 min-h-[calc(100vh-96px)] flex flex-col gap-2"}>
+        {/* Main Area: Fullscreen Canvas with left/right slide-over panels */}
+        <div className="flex-1 min-h-0 relative rounded-md overflow-hidden bg-white">
+          {/* Canvas container (measured for preview) */}
+          <div className="absolute inset-0">
+            <div className="h-full">
+              <div ref={builderCanvasContainerRef} className="w-full h-full">
+                <Canvas
+                  pages={pages}
+                  currentPageId={currentPageId}
+                  selectedComponent={selectedComponent}
+                  isClearPageConfirmOpen={isClearPageConfirmOpen}
+                  setIsClearPageConfirmOpen={setIsClearPageConfirmOpen}
+                  handleComponentClick={handleComponentClick}
+                  handleComponentDrag={handleComponentDrag}
+                  handleChildDrag={handleChildDrag}
+                  handleChildDragEnd={handleChildDragEnd}
+                  handleChildReorder={handleChildReorder}
+                  handleSaveProject={handleSaveProject}
+                  handleResizeStart={handleResizeStart}
+                  deleteComponent={deleteComponent}
+                  handleSwitchPage={handleSwitchPage}
+                  handleDragOver={handleDragOver}
+                  handleDrop={handleDrop}
+                  setMessages={setMessages}
+                  setPages={setPages}
+                  onOpenPreview={handleOpenPreview}
+                  onOpenPreviewNewTab={handleOpenPreviewNewTab}
+                  className="h-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Chat toggle button (left edge) */}
+          <button
+            onClick={() => setIsChatOpen((v) => !v)}
+            aria-label="AI Chat Panelini Aç/Kapat"
+            className="absolute top-1/2 -translate-y-1/2 left-0 z-20"
+          >
+            <div className="w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow hover:bg-white transition-colors flex items-center justify-center backdrop-blur">
+              <ChevronRight className={`w-5 h-5 text-slate-700 transition-transform duration-200 ${isChatOpen ? 'rotate-180' : ''}`} />
+            </div>
+          </button>
+
+          {/* Slide-over AI Chat panel on the left */}
+          <div
+            className={`absolute top-0 left-0 h-full w-80 max-w-[85vw] bg-white/95 backdrop-blur border-r border-gray-200 shadow-lg transition-transform duration-300 z-10 ${isChatOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col min-h-0 overflow-y-auto overscroll-contain`}
+          >
+            <div className="flex-1 min-h-0 overflow-hidden">
               <AIChatPanel
                 messages={messages}
                 setMessages={(next) => setMessages(next)}
@@ -484,39 +770,39 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
                 handleGenerate={handleGenerate}
                 generationMode={generationMode}
                 setGenerationMode={setGenerationMode}
+                stylePreset={stylePreset}
+                setStylePreset={setStylePreset}
+                temperature={temperature}
+                setTemperature={setTemperature}
               />
             </div>
-            <div className="flex-1 min-h-[360px] overflow-hidden rounded-md">
+          </div>
+
+          {/* Properties toggle button (right edge) */}
+          <button
+            onClick={() => setIsPropsOpen((v) => !v)}
+            aria-label="Bileşen Bilgisi Panelini Aç/Kapat"
+            className="absolute top-1/2 -translate-y-1/2 right-0 z-20"
+          >
+            <div className="w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow hover:bg-white transition-colors flex items-center justify-center backdrop-blur">
+              <ChevronLeft className={`w-5 h-5 text-slate-700 transition-transform duration-200 ${isPropsOpen ? '-rotate-180' : ''}`} />
+            </div>
+          </button>
+
+          {/* Slide-over Component Info panel on the right */}
+          <div
+            className={`absolute top-0 right-0 h-full w-80 max-w-[85vw] bg-white/95 backdrop-blur border-l border-gray-200 shadow-lg transition-transform duration-300 z-10 ${isPropsOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col min-h-0 overflow-y-auto overscroll-contain`}
+          >
+            <div className="flex-1 min-h-0 overflow-hidden">
               <ComponentInfoPanel
                 selectedComponent={selectedComponent}
                 pages={pages}
                 currentPageId={currentPageId}
                 updateComponentProps={updateComponentProps}
                 deleteComponent={deleteComponent}
+                replaceComponent={replaceComponent}
               />
             </div>
-          </div>
-          {/* Right: Canvas */}
-          <div className="flex-1 min-h-0 overflow-hidden">
-            <Canvas
-              pages={pages}
-              currentPageId={currentPageId}
-              selectedComponent={selectedComponent}
-              isClearPageConfirmOpen={isClearPageConfirmOpen}
-              setIsClearPageConfirmOpen={setIsClearPageConfirmOpen}
-              handleComponentClick={handleComponentClick}
-              handleComponentDrag={handleComponentDrag}
-              handleSaveProject={handleSaveProject}
-              handleResizeStart={handleResizeStart}
-              deleteComponent={deleteComponent}
-              handleSwitchPage={handleSwitchPage}
-              handleDragOver={handleDragOver}
-              handleDrop={handleDrop}
-              setMessages={setMessages}
-              setPages={setPages}
-              onOpenPreview={handleOpenPreview}
-              className="h-full"
-            />
           </div>
         </div>
       </div>
@@ -536,25 +822,34 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
               Kapat
             </button>
           </div>
-          <div className="flex-1 min-h-0 p-3">
-            <Canvas
-              pages={pages}
-              currentPageId={currentPageId}
-              selectedComponent={selectedComponent}
-              isClearPageConfirmOpen={isClearPageConfirmOpen}
-              setIsClearPageConfirmOpen={setIsClearPageConfirmOpen}
-              handleComponentClick={handleComponentClick}
-              handleComponentDrag={handleComponentDrag}
-              handleSaveProject={handleSaveProject}
-              handleResizeStart={handleResizeStart}
-              deleteComponent={deleteComponent}
-              handleSwitchPage={handleSwitchPage}
-              handleDragOver={handleDragOver}
-              handleDrop={handleDrop}
-              setMessages={setMessages}
-              setPages={setPages}
-              className="h-full"
-            />
+          <div className="flex-1 min-h-0 p-0">
+            <div
+              className="h-full mx-auto"
+              style={{ width: previewWidth ? `${previewWidth}px` : undefined }}
+            >
+              <Canvas
+                pages={pages}
+                currentPageId={currentPageId}
+                selectedComponent={selectedComponent}
+                isClearPageConfirmOpen={isClearPageConfirmOpen}
+                setIsClearPageConfirmOpen={setIsClearPageConfirmOpen}
+                handleComponentClick={handleComponentClick}
+                handleComponentDrag={handleComponentDrag}
+                handleChildDrag={handleChildDrag}
+                handleChildDragEnd={handleChildDragEnd}
+                handleChildReorder={handleChildReorder}
+                handleSaveProject={handleSaveProject}
+                handleResizeStart={handleResizeStart}
+                deleteComponent={deleteComponent}
+                handleSwitchPage={handleSwitchPage}
+                handleDragOver={handleDragOver}
+                handleDrop={handleDrop}
+                setMessages={setMessages}
+                setPages={setPages}
+                onOpenPreviewNewTab={handleOpenPreviewNewTab}
+                className="h-full"
+              />
+            </div>
           </div>
         </div>
       )}

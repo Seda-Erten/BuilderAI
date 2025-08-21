@@ -17,13 +17,13 @@ import {
   ChevronDown,
   Globe,
   Layers,
-  Brain,
   Code,
   CheckCircle,
   Zap,
   Cpu,
   Rocket,
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { motion, useScroll, useTransform } from "framer-motion"
 import { useRef, useEffect, useState } from "react"
@@ -166,7 +166,7 @@ export default function LandingPage() {
             transition={{ delay: 0.2 }}
           >
             <div className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-[#6366F1]/20 to-[#06B6D4]/20 border border-[#6366F1]/30 rounded-full shadow-lg backdrop-blur-sm">
-              <Brain className="w-4 h-4 text-[#6366F1] mr-2 animate-pulse" />
+              <Image src="/technology.png" alt="Logo" width={16} height={16} className="mr-2 animate-pulse" />
               <span className="text-[#F8FAFC] font-semibold text-sm">AI Destekli Gelecek Teknolojisi</span>
             </div>
           </motion.div>
@@ -220,24 +220,21 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          {/* Stats */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }}>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-2xl mx-auto">
-              {[
-                { number: "10K+", label: "Kullanıcı", color: "text-[#6366F1]", glow: "shadow-indigo-500/20" },
-                { number: "50K+", label: "Proje", color: "text-[#06B6D4]", glow: "shadow-cyan-500/20" },
-                { number: "99%", label: "Memnuniyet", color: "text-[#F59E0B]", glow: "shadow-amber-500/20" },
-              ].map((stat, index) => (
-                <div
-                  key={stat.label}
-                  className={`text-center p-4 rounded-lg bg-[#1E293B]/30 backdrop-blur-sm shadow-lg ${stat.glow}`}
-                >
-                  <div className={`text-2xl font-bold ${stat.color} mb-1`}>{stat.number}</div>
-                  <div className="text-slate-400 text-sm">{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
+          {/* Highlights (simplified, no vanity metrics) */}
+          <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
+            {[
+              "Hızlı Kurulum",
+              "Kolay Kullanım",
+              "Gerçek Zamanlı Önizleme",
+            ].map((item) => (
+              <div
+                key={item}
+                className="text-center p-4 rounded-lg bg-[#1E293B]/30 backdrop-blur-sm border border-slate-700/40 text-slate-300"
+              >
+                {item}
+              </div>
+            ))}
+          </div>
 
           {/* Scroll Indicator */}
           <motion.div
@@ -272,7 +269,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
-                icon: Brain,
+                logo: true,
                 title: "AI Destekli Tasarım",
                 description: "Gelişmiş yapay zeka ile otomatik bileşen oluşturma ve akıllı tasarım önerileri",
                 iconBg: "bg-gradient-to-r from-[#6366F1] to-[#8B5CF6]",
@@ -282,7 +279,7 @@ export default function LandingPage() {
               },
               {
                 icon: LayoutGrid,
-                title: "Quantum Sürükle-Bırak",
+                title: "Gelişmiş Sürükle-Bırak",
                 description: "Gelecek nesil görsel editör ile hızlı ve hassas prototipleme deneyimi",
                 iconBg: "bg-gradient-to-r from-[#06B6D4] to-[#0891B2]",
                 cardBg: "bg-gradient-to-br from-[#06B6D4]/10 to-[#0891B2]/5",
@@ -318,7 +315,7 @@ export default function LandingPage() {
               },
               {
                 icon: Shield,
-                title: "Quantum Güvenlik",
+                title: "Gelişmiş Güvenlik",
                 description: "Gelecek nesil güvenlik protokolleri ile maksimum veri koruma",
                 iconBg: "bg-gradient-to-r from-[#F59E0B] to-[#6366F1]",
                 cardBg: "bg-gradient-to-br from-[#F59E0B]/10 to-[#6366F1]/5",
@@ -338,7 +335,13 @@ export default function LandingPage() {
                 <div
                   className={`w-12 h-12 ${feature.iconBg} rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow`}
                 >
-                  <feature.icon className="w-6 h-6 text-white" />
+                  {(() => {
+                    const Icon = feature.icon;
+                    if (feature.logo) {
+                      return <Image src="/technology.png" alt="Logo" width={24} height={24} />;
+                    }
+                    return Icon ? <Icon className="w-6 h-6 text-white" /> : null;
+                  })()}
                 </div>
                 <h3 className="text-lg font-semibold text-[#F8FAFC] mb-2">{feature.title}</h3>
                 <p className="text-slate-300 leading-relaxed">{feature.description}</p>
@@ -381,7 +384,7 @@ export default function LandingPage() {
               {
                 step: "2",
                 icon: LayoutGrid,
-                title: "Quantum Düzenleme",
+                title: "Gelişmiş Düzenleme",
                 description: "Gelişmiş editör ile bileşenleri hassas şekilde konumlandırın ve özelleştirin",
                 bg: "bg-gradient-to-r from-[#6366F1] to-[#06B6D4]",
                 cardBg: "bg-gradient-to-br from-[#6366F1]/20 to-[#06B6D4]/10",
@@ -444,7 +447,7 @@ export default function LandingPage() {
                 name: "Starter",
                 price: "Ücretsiz",
                 description: "Geleceği keşfetmek için",
-                features: ["5 Proje", "Temel AI Asistan", "Kod Export", "Topluluk Desteği"],
+                features: ["Temel AI Asistan", "Kod Export", "Topluluk Desteği"],
                 cta: "Başla",
                 popular: false,
                 buttonBg: "bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800",
@@ -453,19 +456,20 @@ export default function LandingPage() {
                 glow: "",
               },
               {
-                name: "Quantum Pro",
+                name: "Pro",
                 price: "₺199/ay",
                 description: "Gelecek nesil profesyonel deneyim",
                 features: [
                   "Sınırsız Proje",
                   "Advanced AI Asistan",
-                  "Quantum Speed Export",
+                  "Hızlı Export",
                   "Priority Support",
                   "Future Features",
                   "Team Collaboration",
                 ],
-                cta: "Quantum'a Geç",
+                cta: "Pro'ya Geç",
                 popular: true,
+                disabled: true,
                 buttonBg: "bg-gradient-to-r from-[#6366F1] to-[#06B6D4] hover:from-indigo-600 hover:to-cyan-600",
                 cardBg: "bg-gradient-to-br from-[#6366F1]/20 to-[#06B6D4]/10",
                 border: "border-[#6366F1]/50",
@@ -476,13 +480,20 @@ export default function LandingPage() {
                 key={plan.name}
                 className={`p-8 rounded-2xl border ${plan.border} ${plan.cardBg} transition-all duration-300 backdrop-blur-sm ${
                   plan.popular ? `shadow-xl scale-105 ${plan.glow}` : "hover:shadow-lg"
-                }`}
+                } ${plan.disabled ? "opacity-50 grayscale pointer-events-none" : ""}`}
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 whileHover={{ y: -5 }}
               >
+                {plan.disabled && (
+                  <div className="text-center mb-4">
+                    <span className="bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-full shadow flex items-center justify-center w-fit mx-auto">
+                      KAPALI
+                    </span>
+                  </div>
+                )}
                 {plan.popular && (
                   <div className="text-center mb-4">
                     <span className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center justify-center w-fit mx-auto">
@@ -507,7 +518,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <Button className={`w-full ${plan.buttonBg} text-white hover:shadow-lg transition-all`}>
+                <Button disabled={Boolean((plan as any).disabled)} className={`w-full ${plan.buttonBg} text-white hover:shadow-lg transition-all ${plan.disabled ? "cursor-not-allowed" : ""}`}>
                   {plan.cta}
                 </Button>
               </motion.div>
@@ -561,7 +572,7 @@ export default function LandingPage() {
             <div>
               <h4 className="font-semibold mb-4 text-[#F8FAFC]">Destek</h4>
               <div className="space-y-2">
-                {["Yardım Merkezi", "İletişim", "Quantum Topluluk"].map((link) => (
+                {["Yardım Merkezi", "İletişim", "Topluluk"].map((link) => (
                   <a key={link} href="#" className="block text-slate-400 hover:text-[#06B6D4] text-sm">
                     {link}
                   </a>
