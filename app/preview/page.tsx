@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * Amaç: Builder'da oluşturulan sayfayı yeni sekmede piksel piksele önizlemek.
+ * URL Parametreleri: page (sayfa id), w (canvas genişliği px) → builder ile aynı görünüm.
+ * Yerleşim: absolute konumlandırma; bileşenler x,y koordinatlarıyla yerleştirilir.
+ */
+// Bu sayfa, builder'da oluşturulan projeyi yeni sekmede/önizleme modunda gösterir.
+// Önemli noktalar:
+// - Supabase'ten kullanıcı projesini çeker (auth zorunlu).
+// - URL arama parametreleri:
+//   - page: Hangi sayfanın görüntüleneceği (id)
+//   - w: Canvas genişliği (px). Builder ile birebir aynı görünüm için kullanılır.
+// - Mutlak (absolute) yerleşim: Bileşenler x,y koordinatlarına göre konumlandırılır.
+
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
@@ -20,6 +33,7 @@ export default function PreviewPage() {
   useEffect(() => {
     const load = async () => {
       try {
+        // 1) Kullanıcıyı doğrula
         const {
           data: { user },
         } = await supabase.auth.getUser();
@@ -28,6 +42,7 @@ export default function PreviewPage() {
           return;
         }
 
+        // 2) Varsayılan proje verisini çek (user_projects tablosundan)
         const { data, error } = await supabase
           .from("user_projects")
           .select("project_data")
@@ -60,6 +75,7 @@ export default function PreviewPage() {
   const pageData = pages[currentPageId];
   const comps: Component[] = pageData?.components || [];
   const pageBg = pageData?.backgroundColor || "#ffffff";
+  // İçerik yüksekliği: En aşağıdaki bileşenin altına + tampon alan
   const contentHeight = Math.max(
     800,
     ...comps.map((c) => (Number(c.y) || 0) + (Number((c.props as any)?.height) || 0))
@@ -67,6 +83,7 @@ export default function PreviewPage() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: pageBg }}>
+      {/* widthParam varsa, builder canvas ile piksel piksele eşleşmesi için genişliği sabitle ve ortala */}
       <div className={widthParam ? "mx-auto" : undefined} style={widthParam ? { width: Number(widthParam) || undefined } : undefined}>
         <div
           className="relative w-full"
@@ -75,7 +92,7 @@ export default function PreviewPage() {
           {comps.map((component) => (
             <div
               key={component.id}
-              className="absolute"
+              className="absolute" // absolute: her bileşen kendi x,y'sine göre konumlanır
               style={{
                 left: Number(component.x) || 0,
                 top: Number(component.y) || 0,

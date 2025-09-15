@@ -1,3 +1,13 @@
+/**
+ * Amaç: Builder sayfasında proje/sayfa işlemlerini yöneten üst navigasyon barı.
+ * Props:
+ * - pages, currentPageId: Mevcut sayfalar ve aktif sayfa
+ * - editingPageId, setEditingPageId: Sayfa adı düzenleme durumu
+ * - handleSwitchPage/newPage/deletePage/pageNameChange: Sayfa yönetimi
+ * - handleSaveProject/loadProject/exportCode: Proje işlemleri
+ * - handleOpenPreview: Önizleme açma
+ * - handleLogout: Oturum kapatma
+ */
 import { Button } from "@/components/ui/button";
 import { Plus, Save, FolderOpen, Eye, Download, Settings, LogOut, X } from "lucide-react";
 import Image from "next/image";
@@ -49,7 +59,7 @@ export function BuilderNavbar({
             </div>
             <div>
               <h1 className="text-2xl font-bold bg-gradient-to-r from-[#6366F1] via-[#06B6D4] to-[#6366F1] bg-clip-text text-transparent">
-                AI Builder Pro
+                AI Builder
               </h1>
              
             </div>

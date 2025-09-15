@@ -1,3 +1,9 @@
+/**
+ * Amaç: AI ile bileşen üretimi için server-side API endpoint (POST).
+ * İstek gövdesi: { prompt: string, generationMode?, stylePreset?, temperature? }
+ * Çıktı: { components: Component[] } veya { error }
+ * Not: Validasyon (prompt zorunlu), AI hata durumları ve boş listeye karşı koruma içerir.
+ */
 import { NextResponse } from "next/server"
 import { generateComponent } from "@/lib/gemini-ai"
 import type { Component } from "@/lib/types"

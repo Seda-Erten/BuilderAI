@@ -1,3 +1,8 @@
+/**
+ * Amaç: Ürün tanıtım (landing) sayfası.
+ * - Üst seviye tanıtım içerikleri, özellikler, fiyatlandırma ve footer bölümlerini içerir.
+ * - Sadece UI katmanı; uygulama davranışını değiştirmez.
+ */
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -167,7 +172,7 @@ export default function LandingPage() {
           >
             <div className="inline-flex items-center px-5 py-2 bg-gradient-to-r from-[#6366F1]/20 to-[#06B6D4]/20 border border-[#6366F1]/30 rounded-full shadow-lg backdrop-blur-sm">
               <Image src="/technology.png" alt="Logo" width={16} height={16} className="mr-2 animate-pulse" />
-              <span className="text-[#F8FAFC] font-semibold text-sm">AI Destekli Gelecek Teknolojisi</span>
+              <span className="text-[#F8FAFC] font-semibold text-sm">AI Destekli UI Asistanı</span>
             </div>
           </motion.div>
 
@@ -457,7 +462,6 @@ export default function LandingPage() {
               },
               {
                 name: "Pro",
-                price: "₺199/ay",
                 description: "Gelecek nesil profesyonel deneyim",
                 features: [
                   "Sınırsız Proje",
@@ -487,21 +491,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: index * 0.2 }}
                 whileHover={{ y: -5 }}
               >
-                {plan.disabled && (
-                  <div className="text-center mb-4">
-                    <span className="bg-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-full shadow flex items-center justify-center w-fit mx-auto">
-                      KAPALI
-                    </span>
-                  </div>
-                )}
-                {plan.popular && (
-                  <div className="text-center mb-4">
-                    <span className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] text-white text-xs font-semibold px-4 py-2 rounded-full shadow-lg flex items-center justify-center w-fit mx-auto">
-                      <Zap className="w-3 h-3 mr-1" />
-                      EN POPÜLER
-                    </span>
-                  </div>
-                )}
+              
 
                 <div className="text-center mb-8">
                   <h3 className="text-xl font-semibold mb-2 text-[#F8FAFC]">{plan.name}</h3>

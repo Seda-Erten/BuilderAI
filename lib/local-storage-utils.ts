@@ -1,7 +1,24 @@
 import type { ProjectPages, Component } from "@/lib/types"
 
+/**
+ * Amaç
+ * - Tarayıcı localStorage üzerinde proje sayfalarını (ProjectPages) güvenli şekilde saklamak, okumak ve temizlemek.
+ * - Basit sürüm/format geriye dönük uyumluluk (eski dizi formatını yeni sayfa yapısına dönüştürme) sağlar.
+ *
+ * Depolama Anahtarı
+ * - STORAGE_KEY: Aynı projeye ait verilerin çakışmaması için tekil tutulur.
+ *
+ * Güvenlik/Notlar
+ * - localStorage senkron ve yalnızca istemci tarafında mevcuttur; SSR sırasında erişilmemelidir.
+ * - JSON.parse/stringify hataları try/catch ile loglanır, UI kırılmasını engeller.
+ */
+
 const STORAGE_KEY = "ai-builder-project-pages"
 
+/**
+ * Projeyi localStorage'a yazar.
+ * @param pages ProjectPages nesnesi
+ */
 export const saveProject = (pages: ProjectPages) => {
   try {
     const serializedState = JSON.stringify(pages)
@@ -12,6 +29,10 @@ export const saveProject = (pages: ProjectPages) => {
   }
 }
 
+/**
+ * Projeyi localStorage'tan okur ve eski formatları gerekiyorsa yeni şemaya dönüştürür.
+ * @returns ProjectPages veya null (kayıt yoksa ya da hata durumunda)
+ */
 export const loadProject = (): ProjectPages | null => {
   try {
     const serializedState = localStorage.getItem(STORAGE_KEY)
@@ -41,6 +62,9 @@ export const loadProject = (): ProjectPages | null => {
   }
 }
 
+/**
+ * Kaydedilen projeyi localStorage'tan tamamen siler.
+ */
 export const clearProject = () => {
   try {
     localStorage.removeItem(STORAGE_KEY)

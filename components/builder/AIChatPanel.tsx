@@ -1,3 +1,12 @@
+/**
+ * Amaç: Builder içinde kullanıcıdan doğal dil prompt alıp AI üretimini tetikleyen sohbet paneli.
+ * Props (özet): messages/prompt/isGenerating + set*; generationMode, stylePreset, temperature kontrolü.
+ * Not: Üretim mantığı üst bileşende; bu panel yalnızca UI/etkileşim katmanıdır.
+ */
+// AIChatPanel: Builder içindeki sohbet paneli.
+// Amaç: Kullanıcının doğal dil girdisini almak, ayarları (stil preset, sıcaklık)
+// yönetmek ve AI yanıtlarını mesajlar halinde göstermek.
+// Not: Bu bileşen yalnızca UI/etkileşim katmanı; asıl üretim mantığı üst seviye handleGenerate ile tetiklenir.
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +17,7 @@ import { Message } from "@/lib/types";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
 
+// Dışarıdan beklenen props: üst bileşen state'lerini buraya enjekte eder.
 interface AIChatPanelProps {
   messages: Message[];
   setMessages: (messages: Message[]) => void;
@@ -25,8 +35,10 @@ interface AIChatPanelProps {
 
 export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenerating, handleGenerate, generationMode, setGenerationMode, stylePreset, setStylePreset, temperature, setTemperature }: AIChatPanelProps) {
   return (
+    // Dış kabuk: sabit koyu stil, blur ve gölge efektleri
     <Card className="h-full min-h-0 bg-[#1E293B]/95 backdrop-blur-2xl border-slate-700/50 shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300 flex flex-col">
       <div className="p-4 border-b border-slate-700/50 sticky top-0 z-10 bg-[#1E293B]/95 backdrop-blur-2xl">
+        {/* Başlık alanı: Bot rozeti + durum */}
         <div className="flex items-center space-x-3">
           <div className="relative">
             <div className="w-12 h-12 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full flex items-center justify-center animate-pulse shadow-lg shadow-indigo-500/25">
@@ -47,6 +59,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
       <div className="flex-1 min-h-0 p-4 overflow-y-auto">
         <div className="space-y-4">
           <div className="grid grid-cols-1 gap-3">
+            {/* Stil preset seçimi: üretim stilini (system prompt ipuçlarını) etkiler */}
             <div className="space-y-2">
               <label className="text-xs text-slate-300">Stil Preseti</label>
               <Select value={stylePreset} onValueChange={(v) => setStylePreset(v as any)}>
@@ -61,6 +74,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
                 </SelectContent>
               </Select>
             </div>
+            {/* Sıcaklık: 0 (deterministik) → 1 (yaratıcı). Model sampling'ini etkiler */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-xs text-slate-300">Yaratıcılık (Sıcaklık)</label>
@@ -75,6 +89,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
               />
             </div>
           </div>
+          {/* Mesaj listesi: kullanıcı ve AI balonları */}
           {messages.map((message, index) => (
             <div
               key={index}
@@ -110,6 +125,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
               </div>
             </div>
           ))}
+          {/* Üretim sürerken: tipik "yazıyor" animasyonu */}
           {isGenerating && (
             <div className="flex justify-start animate-fade-in">
               <div className="flex items-start space-x-3">
@@ -136,6 +152,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
       </div>
 
       <div className="p-4 border-t border-slate-700/50">
+        {/* Alt aksiyon bölgesi: hızlı örnekler + prompt girişi + gönder */}
         {/* Üretim modu toggle kaldırıldı; tek mod (sections) kullanılacak */}
         <div className="mb-4">
           <p className="text-xs text-slate-400 mb-3 flex items-center">
@@ -143,6 +160,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
             Hızlı başlangıç örnekleri:
           </p>
           <div className="grid grid-cols-1 gap-2">
+            {/* Tek tıkla prompt doldurur; kullanıcı düzenleyip gönderebilir */}
             {["Login formu", "Navbar oluştur", ].map((example) => (
               <Button
                 key={example}
@@ -163,6 +181,7 @@ export function AIChatPanel({ messages, setMessages, prompt, setPrompt, isGenera
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Hangi bileşeni oluşturmak istiyorsun?"
             className="bg-slate-800/50 border-slate-700/50 text-[#F8FAFC] placeholder:text-slate-400 focus:bg-slate-800/70 focus:border-[#6366F1] transition-all backdrop-blur-sm"
+            // Enter ile üretimi tetikle (tek satır input)
             onKeyPress={(e) => e.key === "Enter" && handleGenerate()}
           />
           <Button

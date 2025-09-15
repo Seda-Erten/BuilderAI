@@ -1,3 +1,12 @@
+/**
+ * Amaç: Builder merkez alanında AI tarafından üretilen veya kullanıcı eklediği bileşenleri
+ * - sürükle-bırak ile konumlandırmak, yeniden boyutlandırmak ve düzenlemek için ana tuval.
+ * Props (özet):
+ * - pages, currentPageId, setPages: Sayfa ve içerik durumu
+ * - handleComponentDrag/Resize/Delete/Drop/...: Etkileşim işleyicileri
+ * - onOpenPreview / onOpenPreviewNewTab: Önizleme açma aksiyonları
+ * Not: UI davranışını değiştirmeden yalnızca açıklama eklendi.
+ */
 import { useState } from "react";
 
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
@@ -23,8 +32,6 @@ interface CanvasProps {
   handleResizeStart: (e: React.MouseEvent, componentId: string, handleType: "br" | "bl" | "tr" | "tl") => void;
   deleteComponent: (id: string) => void;
   handleSwitchPage: (pageId: string) => void;
-  handleDragOver: (e: React.DragEvent<HTMLDivElement>) => void;
-  handleDrop: (e: React.DragEvent<HTMLDivElement>) => void;
   setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) => void; // Callback desteği eklendi
   setPages: (pages: ProjectPages) => void;
   className?: string;
@@ -44,8 +51,6 @@ export function Canvas({
   handleResizeStart,
   deleteComponent,
   handleSwitchPage,
-  handleDragOver,
-  handleDrop,
   setMessages,
   setPages,
   className,
@@ -89,11 +94,11 @@ export function Canvas({
             <div>
               <h2 className="text-xl font-semibold text-gray-900 dark:text-slate-100 flex items-center">
                 <Palette className="w-5 h-5 mr-2 text-[#6366F1]" />
-                Canvas
+                Çalışma Alanı
               </h2>
               <p className="text-xs text-gray-600 dark:text-slate-400 flex items-center mt-1">
                 <span className="w-2 h-2 bg-[#06B6D4] rounded-full mr-2 animate-pulse"></span>
-                {canvasComponents.length} bileşen • Sürükleyip konumlandırabilirsin
+                {canvasComponents.length} bileşen • Tuval üzerinde düzenleyebilirsin
               </p>
             </div>
             <div className="flex items-center space-x-3">
@@ -173,8 +178,6 @@ export function Canvas({
 
       <div
         className="flex-1 min-h-0 relative overflow-auto"
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
       >
         <div
           className="relative w-full p-0"
@@ -300,7 +303,6 @@ export function Canvas({
                     <div className="w-6 h-6 bg-gradient-to-r from-[#6366F1] to-[#06B6D4] rounded-full"></div>
                   </div>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">AI Sihri Başlasın!</h3>
                 <p className="text-gray-600 mb-6 max-w-md">
                   AI asistanına ne yapmak istediğini söyle,
                   <br />
@@ -317,10 +319,6 @@ export function Canvas({
                     style={{ animationDelay: "1s" }}
                   ></div>
                 </div>
-                <Badge className="bg-gradient-to-r from-[#6366F1] to-[#06B6D4] text-white">
-                  <Rocket className="w-3 h-3 mr-1" />
-                  AI Yaratıcılık
-                </Badge>
               </div>
             </div>
           )}

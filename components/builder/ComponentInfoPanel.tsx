@@ -1,3 +1,8 @@
+/**
+ * Amaç: Canvas üzerinde seçili bileşenin bilgilerini ve düzenlenebilir özelliklerini göstermek.
+ * Props: selectedComponent, pages/currentPageId, updateComponentProps, deleteComponent, replaceComponent?
+ * Not: Sadece UI ve prop delege eden bir panel; veri akışı üst bileşenden gelir.
+ */
 import { Card } from "@/components/ui/card";
 import { Code, Palette, Star, Users, Zap, Rocket } from "lucide-react";
 import { Component, ProjectPages } from "@/lib/types";

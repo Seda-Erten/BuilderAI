@@ -1,4 +1,8 @@
 "use client";
+// BuilderPage: No-code editörün ana çalışma yüzeyi.
+// Bu sayfa; kullanıcı oturum kontrolü, proje verisini (sayfalar & bileşenler) yükleme/kaydetme,
+// AI ile bileşen üretme, sürükle-bırak konumlandırma, yeniden sıralama, yeniden boyutlandırma,
+// ve önizleme (modal veya yeni sekme) işlemlerini orkestre eder.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -10,10 +14,10 @@ import { AIChatPanel } from "@/components/builder/AIChatPanel";
 import { Canvas } from "@/components/builder/Canvas";
 import { ComponentInfoPanel } from "@/components/builder/ComponentInfoPanel";
 import { ExportCodeDialog } from "@/components/builder/ExportCodeDialog";
-import { ComponentLibrary } from "@/components/builder/component-library";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function BuilderPage() {
+  // UI ve işlevsel durumlar: prompt, üretim bayrağı, mevcut sayfalar ve seçimler
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMode, setGenerationMode] = useState<"full" | "sections">("sections");
@@ -36,14 +40,14 @@ export default function BuilderPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const router = useRouter();
-  const pagesRef = useRef(pages);
-  const builderCanvasContainerRef = useRef<HTMLDivElement | null>(null);
+  const pagesRef = useRef(pages); // Kaydetme sonrası en güncel değere erişmek için referans
+  const builderCanvasContainerRef = useRef<HTMLDivElement | null>(null); // Canvas kapsayıcısının genişliğini ölçmek için
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPropsOpen, setIsPropsOpen] = useState(false);
   const [stylePreset, setStylePreset] = useState<"minimal" | "brand" | "dark" | "glass">("minimal");
   const [temperature, setTemperature] = useState<number>(0.35);
 
-  // Generate a collision-resistant ID for components
+  // Bileşenler için çakışmaya dayanıklı (eşsiz) id üreticisi
   const generateUniqueId = useCallback((type: string, taken: Set<string>) => {
     let candidate = "";
     do {
@@ -55,7 +59,7 @@ export default function BuilderPage() {
     return candidate;
   }, []);
 
-  // Collect all ids from a tree (top-level + children)
+  // Ağaçtaki tüm id'leri topla (üst seviye + children) — eşsizlik kontrolü için
   const collectAllIds = useCallback((list: Component[], into?: Set<string>) => {
     const acc = into || new Set<string>()
     const visit = (c: Component) => {
@@ -66,7 +70,7 @@ export default function BuilderPage() {
     return acc
   }, [])
 
-  // Normalize a list of incoming components to guarantee unique ids (considering whole current tree)
+  // Yeni gelen bileşenleri, mevcut ağaçtaki tüm id'leri dikkate alarak eşsizleştir
   const normalizeIncomingComponents = useCallback((incoming: Component[], currentList: Component[]) => {
     const taken = collectAllIds(currentList)
     const fixTree = (node: Component): Component => {
@@ -78,7 +82,7 @@ export default function BuilderPage() {
     return incoming.map(fixTree)
   }, [collectAllIds, generateUniqueId]);
 
-  // Normalize all pages' components to ensure uniqueness after loading from storage (deep, includes children)
+  // Tüm sayfalardaki bileşenleri derinlemesine eşsizleştir (özellikle depodan/uzaktan yükleme sonrası)
   const normalizeAllPages = useCallback((incomingPages: ProjectPages): ProjectPages => {
     const result: ProjectPages = {} as ProjectPages
     for (const [pid, page] of Object.entries(incomingPages)) {
@@ -95,6 +99,7 @@ export default function BuilderPage() {
     return result
   }, [generateUniqueId])
 
+  // İlk yüklemede: kullanıcıyı doğrula, proje verisini Supabase'ten çek
   useEffect(() => {
     const checkUserAndLoadProject = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -112,11 +117,13 @@ export default function BuilderPage() {
     pagesRef.current = pages;
   }, [pages]);
 
+  // Çıkış yap ve auth sayfasına yönlendir
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
   };
 
+  // Projeyi Supabase'e kaydet (upsert). Başarılı olursa opsiyonel başarı mesajı gönder.
   const handleSaveProject = async (currentPages: ProjectPages, showSuccessMessage = false) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -158,6 +165,7 @@ export default function BuilderPage() {
     }
   };
 
+  // AI bileşen üretimi: prompt'u mesajlara ekle, API'ye gönder, gelen bileşenleri eşsizleştir ve sayfaya ekle
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
@@ -216,10 +224,12 @@ export default function BuilderPage() {
     }
   };
 
+  // Canvas'ta bir bileşen seçildiğinde yan panelde özelliklerini göstermek için id'yi işaretle
   const handleComponentClick = (id: string) => {
     setSelectedComponent(id);
   };
 
+  // Üst seviye (absolute) bileşeni sürükleme: sadece x/y güncellenir
   const handleComponentDrag = (id: string, newX: number, newY: number) => {
     setPages((prev) => ({
       ...prev,
@@ -232,7 +242,7 @@ export default function BuilderPage() {
     }));
   };
 
-  // Nested children drag inside an absolute-positioned parent
+  // İç içe (nested) child sürükleme: parent içinde child'ın x/y'sini güncelle
   const handleChildDrag = (parentId: string, childId: string, newX: number, newY: number) => {
     const updateParentInTree = (list: Component[]): Component[] =>
       list.map((comp) => {
@@ -257,12 +267,12 @@ export default function BuilderPage() {
     }));
   };
 
-  // Save after nested drag completes
+  // Nested sürükleme bittikten sonra projeyi kaydet
   const handleChildDragEnd = async (parentId: string, childId: string) => {
     await handleSaveProject(pagesRef.current, false);
   };
 
-  // Reorder children inside a flex/grid parent
+  // Flex/Grid parent içinde children yeniden sıralama (drag & drop reorder)
   const handleChildReorder = (parentId: string, fromIndex: number, toIndex: number) => {
     const reorderInTree = (list: Component[]): Component[] =>
       list.map((comp) => {
@@ -298,6 +308,7 @@ export default function BuilderPage() {
     handleSaveProject(updatedPages, false);
   };
 
+  // Bir bileşeni (ağaçta her seviyede) sil ve kaydet
   const deleteComponent = async (id: string) => {
     // Remove component with given id anywhere in the tree (top-level or nested)
     const removeFromTree = (list: Component[]): Component[] => {
@@ -327,6 +338,7 @@ export default function BuilderPage() {
     }
   };
 
+  // Bir bileşenin props'larını güncelle (derin arama) ve kaydet
   const updateComponentProps = useCallback(
     async (id: string, newProps: any) => {
       const updateInTree = (list: Component[]): Component[] =>
@@ -348,13 +360,14 @@ export default function BuilderPage() {
     [currentPageId, pages]
   );
 
+  // Tüm sayfa/bileşenlerden export kodu üret ve dialogu aç
   const handleExportCode = () => {
     const code = generateCode(pages);
     setExportedCode(code);
     setIsExportDialogOpen(true);
   };
 
-  // Replace a component (top-level or nested) with a new component type while preserving position/size
+  // Bir bileşeni (üst/nested) yeni tip ile değiştir. Konum ve boyutu koru, id eşsizleştir, sonra kaydet.
   const replaceComponent = async (targetId: string, newType: Component["type"]) => {
     const makeNew = (type: Component["type"], base: Component): Component => {
       const currentAllIds = collectAllIds(pages[currentPageId]?.components || [])
@@ -428,6 +441,7 @@ export default function BuilderPage() {
     if (newId) setSelectedComponent(newId)
   }
 
+  // Tam ekran önizleme (modal): merkez Canvas kapsayıcısının genişliğini ölç ve aynı genişlikle göster
   const handleOpenPreview = () => {
     // Ölç: merkez Canvas kapsayıcısının mevcut genişliği
     const w = builderCanvasContainerRef.current?.clientWidth;
@@ -440,6 +454,7 @@ export default function BuilderPage() {
   };
   const handleClosePreview = () => setIsPreviewOpen(false);
 
+  // Yeni sekmede önizleme: güncel projeyi kaydet, Canvas genişliğini ölç, URL'e w parametresi olarak ekle
   const handleOpenPreviewNewTab = async () => {
     try {
       // En güncel durumu kaydet
@@ -452,6 +467,7 @@ export default function BuilderPage() {
     }
   };
 
+  // Supabase'ten proje verisini yükle, yoksa varsayılan sayfayı oluştur
   const handleLoadProject = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -502,6 +518,7 @@ export default function BuilderPage() {
     }
   };
 
+  // Yeni sayfa oluştur, kaydet ve ona geç
   const handleNewPage = async () => {
     const newPageId = `page-${Object.keys(pages).length + 1}`;
     const updatedPages = {
@@ -514,6 +531,7 @@ export default function BuilderPage() {
     setSelectedComponent(null);
   };
 
+  // Bir sayfayı sil (en az 1 sayfa bırak). Gerekirse aktif sayfayı değiştir.
   const handleDeletePage = async (pageId: string) => {
     if (Object.keys(pages).length === 1) {
       setMessages((prev) => [...prev, { type: "error", content: "Son sayfayı silemezsin!", timestamp: new Date() }]);
@@ -531,6 +549,7 @@ export default function BuilderPage() {
     setSelectedComponent(null);
   };
 
+  // Sayfa adını güncelle ve kaydet
   const handlePageNameChange = async (pageId: string, newName: string) => {
     const updatedPages = {
       ...pages,
@@ -543,93 +562,9 @@ export default function BuilderPage() {
     await handleSaveProject(updatedPages, false);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-  };
+  // Component Library kaldırıldığı için dışarıdan Canvas'a drop akışı devre dışı.
 
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const componentType = e.dataTransfer.getData("componentType");
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
-    let newComponent: Component | null = null;
-    const existing = pages[currentPageId]?.components || [];
-    const id = generateUniqueId(componentType, new Set(existing.map((c) => c.id)));
-
-    switch (componentType) {
-      case "button":
-        newComponent = {
-          id,
-          type: "button",
-          x,
-          y,
-          props: { text: "Yeni Buton", variant: "default", width: 120, height: 40, targetPageId: "" },
-        };
-        break;
-      case "text":
-        newComponent = {
-          id,
-          type: "text",
-          x,
-          y,
-          props: { text: "Yeni Metin", className: "text-lg text-gray-900", width: 200, height: 30 },
-        };
-        break;
-      case "input":
-        newComponent = {
-          id,
-          type: "input",
-          x,
-          y,
-          props: { placeholder: "Yeni Input", type: "text", value: "", width: 250, height: 40 },
-        };
-        break;
-      case "card":
-        newComponent = {
-          id,
-          type: "card",
-          x,
-          y,
-          props: { title: "Yeni Kart", content: "Kart içeriği...", width: 300, height: 200 },
-        };
-        break;
-      case "div":
-        newComponent = {
-          id,
-          type: "div",
-          x,
-          y,
-          props: {
-            className: "w-64 h-32 bg-blue-100 border border-blue-300 rounded-md flex items-center justify-center",
-            width: 256,
-            height: 128,
-          },
-          children: [],
-        };
-        break;
-      default:
-        break;
-    }
-
-    if (newComponent) {
-      const updatedPages = {
-        ...pages,
-        [currentPageId]: {
-          ...pages[currentPageId],
-          components: [...(pages[currentPageId]?.components || []), newComponent],
-        },
-      };
-      setPages(updatedPages);
-      await handleSaveProject(updatedPages, false);
-      setMessages((prev) => [
-        ...prev,
-        { type: "ai", content: `${componentType} bileşeni tuvale eklendi!`, timestamp: new Date() },
-      ]);
-    }
-  };
-
+// Bileşeni köşe tutamaçlarından sürükleyerek yeniden boyutlandırma. Sol/üst için x/y ayarlanır.
 const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType: "br" | "bl" | "tr" | "tl") => {
   e.stopPropagation();
   const component = pages[currentPageId].components.find((c) => c.id === componentId);
@@ -689,144 +624,39 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
   document.addEventListener("mouseup", stopResize);
 };
 
+  // Navbar'dan sayfa değiştirildiğinde seçili bileşeni sıfırla
   function handleSwitchPage(pageId: string): void {
     setCurrentPageId(pageId);
     setSelectedComponent(null);
   }
 
   return (
-    <div className="relative flex flex-col flex-1 overflow-hidden bg-white">
-      <BuilderNavbar
-        pages={pages}
-        currentPageId={currentPageId}
-        editingPageId={editingPageId}
-        setEditingPageId={setEditingPageId}
-        handleSwitchPage={handleSwitchPage}
-        handleNewPage={handleNewPage}
-        handleDeletePage={handleDeletePage}
-        handlePageNameChange={handlePageNameChange}
-        handleSaveProject={handleSaveProject}
-        handleLoadProject={handleLoadProject}
-        handleExportCode={handleExportCode}
-        handleLogout={handleLogout}
-        handleOpenPreview={handleOpenPreview}
-      />
-      <div className={"px-2 pb-3 pt-3 min-h-[calc(100vh-96px)] flex flex-col gap-2"}>
-        {/* Main Area: Fullscreen Canvas with left/right slide-over panels */}
-        <div className="flex-1 min-h-0 relative rounded-md overflow-hidden bg-white">
-          {/* Canvas container (measured for preview) */}
-          <div className="absolute inset-0">
-            <div className="h-full">
-              <div ref={builderCanvasContainerRef} className="w-full h-full">
-                <Canvas
-                  pages={pages}
-                  currentPageId={currentPageId}
-                  selectedComponent={selectedComponent}
-                  isClearPageConfirmOpen={isClearPageConfirmOpen}
-                  setIsClearPageConfirmOpen={setIsClearPageConfirmOpen}
-                  handleComponentClick={handleComponentClick}
-                  handleComponentDrag={handleComponentDrag}
-                  handleChildDrag={handleChildDrag}
-                  handleChildDragEnd={handleChildDragEnd}
-                  handleChildReorder={handleChildReorder}
-                  handleSaveProject={handleSaveProject}
-                  handleResizeStart={handleResizeStart}
-                  deleteComponent={deleteComponent}
-                  handleSwitchPage={handleSwitchPage}
-                  handleDragOver={handleDragOver}
-                  handleDrop={handleDrop}
-                  setMessages={setMessages}
-                  setPages={setPages}
-                  onOpenPreview={handleOpenPreview}
-                  onOpenPreviewNewTab={handleOpenPreviewNewTab}
-                  className="h-full"
-                />
-              </div>
-            </div>
-          </div>
+  <div className="relative flex flex-col flex-1 overflow-auto bg-white">
+    {/* Üst navbar: proje işlemleri ve sayfa yönetimi */}
+    <BuilderNavbar
+      pages={pages}
+      currentPageId={currentPageId}
+      editingPageId={editingPageId}
+      setEditingPageId={setEditingPageId}
+      handleSwitchPage={handleSwitchPage}
+      handleNewPage={handleNewPage}
+      handleDeletePage={handleDeletePage}
+      handlePageNameChange={handlePageNameChange}
+      handleSaveProject={handleSaveProject}
+      handleLoadProject={handleLoadProject}
+      handleExportCode={handleExportCode}
+      handleLogout={handleLogout}
+      handleOpenPreview={handleOpenPreview}
+    />
 
-          {/* Chat toggle button (left edge) */}
-          <button
-            onClick={() => setIsChatOpen((v) => !v)}
-            aria-label="AI Chat Panelini Aç/Kapat"
-            className="absolute top-1/2 -translate-y-1/2 left-0 z-20"
-          >
-            <div className="w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow hover:bg-white transition-colors flex items-center justify-center backdrop-blur">
-              <ChevronRight className={`w-5 h-5 text-slate-700 transition-transform duration-200 ${isChatOpen ? 'rotate-180' : ''}`} />
-            </div>
-          </button>
-
-          {/* Slide-over AI Chat panel on the left */}
-          <div
-            className={`absolute top-0 left-0 h-full w-80 max-w-[85vw] bg-white/95 backdrop-blur border-r border-gray-200 shadow-lg transition-transform duration-300 z-10 ${isChatOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col min-h-0 overflow-y-auto overscroll-contain`}
-          >
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <AIChatPanel
-                messages={messages}
-                setMessages={(next) => setMessages(next)}
-                prompt={prompt}
-                setPrompt={setPrompt}
-                isGenerating={isGenerating}
-                handleGenerate={handleGenerate}
-                generationMode={generationMode}
-                setGenerationMode={setGenerationMode}
-                stylePreset={stylePreset}
-                setStylePreset={setStylePreset}
-                temperature={temperature}
-                setTemperature={setTemperature}
-              />
-            </div>
-          </div>
-
-          {/* Properties toggle button (right edge) */}
-          <button
-            onClick={() => setIsPropsOpen((v) => !v)}
-            aria-label="Bileşen Bilgisi Panelini Aç/Kapat"
-            className="absolute top-1/2 -translate-y-1/2 right-0 z-20"
-          >
-            <div className="w-9 h-9 rounded-full bg-white/90 border border-gray-200 shadow hover:bg-white transition-colors flex items-center justify-center backdrop-blur">
-              <ChevronLeft className={`w-5 h-5 text-slate-700 transition-transform duration-200 ${isPropsOpen ? '-rotate-180' : ''}`} />
-            </div>
-          </button>
-
-          {/* Slide-over Component Info panel on the right */}
-          <div
-            className={`absolute top-0 right-0 h-full w-80 max-w-[85vw] bg-white/95 backdrop-blur border-l border-gray-200 shadow-lg transition-transform duration-300 z-10 ${isPropsOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col min-h-0 overflow-y-auto overscroll-contain`}
-          >
-            <div className="flex-1 min-h-0 overflow-hidden">
-              <ComponentInfoPanel
-                selectedComponent={selectedComponent}
-                pages={pages}
-                currentPageId={currentPageId}
-                updateComponentProps={updateComponentProps}
-                deleteComponent={deleteComponent}
-                replaceComponent={replaceComponent}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-      <ExportCodeDialog
-        isOpen={isExportDialogOpen}
-        onOpenChange={setIsExportDialogOpen}
-        exportedCode={exportedCode}
-      />
-      {isPreviewOpen && (
-        <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col">
-          <div className="flex items-center justify-between p-3 border-b border-white/10">
-            <div className="text-white text-sm">Tam Ekran Önizleme</div>
-            <button
-              onClick={handleClosePreview}
-              className="text-white/90 hover:text-white rounded px-3 py-1.5 bg-white/10 border border-white/10"
-            >
-              Kapat
-            </button>
-          </div>
-          <div className="flex-1 min-h-0 p-0">
-            <div
-              className="h-full mx-auto"
-              style={{ width: previewWidth ? `${previewWidth}px` : undefined }}
-            >
+    {/* Orta alan: Varsayılan kapalı sol/sağ paneller, oklarla aç/kapat */}
+    <div className={"px-2 pb-3 pt-3 min-h-[calc(100vh-64px)] flex flex-col gap-2"}>
+      <div className="flex-1 min-h-0 relative rounded-md overflow-auto overscroll-contain bg-white">
+        {/* Katman 1: Canvas daima tam alanı kaplar */}
+        <div className="absolute inset-0 z-0 pointer-events-auto">
+          <div className="flex-1 min-w-0 relative">
+            {/* Ölçüm için kapsayıcı; genişlik yeni sekme/önizleme ile eşleştirilir */}
+            <div ref={builderCanvasContainerRef} className="w-full h-full">
               <Canvas
                 pages={pages}
                 currentPageId={currentPageId}
@@ -842,17 +672,130 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
                 handleResizeStart={handleResizeStart}
                 deleteComponent={deleteComponent}
                 handleSwitchPage={handleSwitchPage}
-                handleDragOver={handleDragOver}
-                handleDrop={handleDrop}
-                setMessages={setMessages}
-                setPages={setPages}
+                setMessages={setMessages as any}
+                setPages={setPages as any}
+                onOpenPreview={handleOpenPreview}
                 onOpenPreviewNewTab={handleOpenPreviewNewTab}
-                className="h-full"
               />
             </div>
           </div>
         </div>
-      )}
+
+        {/* Katman 2: Sol/sağ paneller Canvas üzerine bindirilir */}
+        <>
+          {/* Sol Panel: AI Chat (toggle) */}
+          {isChatOpen ? (
+            <div className="absolute left-0 top-0 bottom-0 z-[150] w-[340px] min-w-[300px] max-w-[380px] border-r border-gray-200 bg-white/70 supports-[backdrop-filter]:bg-white/50 backdrop-blur overflow-auto pointer-events-auto">
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="absolute right-2 top-1/2 -translate-y-1/2 z-[210] rounded-md px-2 py-1.5 bg-white/95 border border-gray-200 shadow flex items-center gap-1 text-xs text-gray-700 hover:bg-white"
+                aria-label="Sohbet panelini kapat"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <AIChatPanel
+                messages={messages}
+                setMessages={setMessages}
+                prompt={prompt}
+                setPrompt={setPrompt}
+                isGenerating={isGenerating}
+                handleGenerate={handleGenerate}
+                generationMode={generationMode}
+                setGenerationMode={setGenerationMode}
+                stylePreset={stylePreset}
+                setStylePreset={setStylePreset}
+                temperature={temperature}
+                setTemperature={setTemperature}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsChatOpen(true)}
+              className="absolute left-2 top-1/2 -translate-y-1/2 z-[200] rounded-md px-2 py-2 bg-white/90 border border-gray-200 shadow flex flex-col items-center gap-1 text-xs text-gray-700 hover:bg-white pointer-events-auto"
+              aria-label="Sohbet panelini aç"
+            >
+              <ChevronRight className="w-4 h-4" />
+              <span className="select-none">AI</span>
+            </button>
+          )}
+
+                {/* Sağ Panel: Properties (toggle) */}
+                {isPropsOpen ? (
+                  <div className="absolute right-0 top-0 bottom-0 z-[150] w-[360px] min-w-[320px] max-w-[420px] border-l border-gray-200 bg-white/70 supports-[backdrop-filter]:bg-white/50 backdrop-blur overflow-auto pointer-events-auto">
+                    <button
+                      onClick={() => setIsPropsOpen(false)}
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-[210] rounded-full px-2 py-1.5 bg-white/95 border border-gray-200 shadow flex items-center gap-1 text-xs text-gray-700 hover:bg-white"
+                      aria-label="Özellik panelini kapat"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                    <ComponentInfoPanel
+                      selectedComponent={selectedComponent}
+                      pages={pages}
+                      currentPageId={currentPageId}
+                      updateComponentProps={updateComponentProps}
+                      deleteComponent={deleteComponent}
+                      replaceComponent={replaceComponent}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setIsPropsOpen(true)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 z-[200] rounded-md px-2 py-2 bg-white/90 border border-gray-200 shadow flex flex-col items-center gap-1 text-xs text-gray-700 hover:bg-white pointer-events-auto"
+                    aria-label="Özellik panelini aç"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    <span className="select-none">Props</span>
+                  </button>
+                )}
+        </>
     </div>
-  );
+    </div>
+
+    {/* Kod export diyalogu */}
+    <ExportCodeDialog
+      isOpen={isExportDialogOpen}
+      onOpenChange={setIsExportDialogOpen}
+      exportedCode={exportedCode}
+    />
+
+    {/* Tam ekran önizleme modalı: Canvas genişliği merkez kapsayıcıyla eşleşir */}
+    {isPreviewOpen && (
+      <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col">
+        <div className="flex items-center justify-between p-3 border-b border-white/10">
+          <div className="text-white text-sm">Tam Ekran Önizleme</div>
+          <button
+            onClick={handleClosePreview}
+            className="text-white/90 hover:text-white rounded px-3 py-1.5 bg-white/10 border border-white/10"
+          >
+            Kapat
+          </button>
+        </div>
+        <div className="flex-1 min-h-0 p-0">
+          <div className="h-full mx-auto" style={{ width: previewWidth ? `${previewWidth}px` : undefined }}>
+            {/* Modal önizleme: aynı genişlikte render */}
+            <Canvas
+              pages={pages}
+              currentPageId={currentPageId}
+              selectedComponent={selectedComponent}
+              isClearPageConfirmOpen={false}
+              setIsClearPageConfirmOpen={() => {}}
+              handleComponentClick={() => {}}
+              handleComponentDrag={() => {}}
+              handleChildDrag={() => {}}
+              handleChildDragEnd={() => {}}
+              handleChildReorder={() => {}}
+              handleSaveProject={() => {}}
+              handleResizeStart={() => {}}
+              deleteComponent={() => {}}
+              handleSwitchPage={() => {}}
+              setMessages={() => {}}
+              setPages={() => {}}
+            />
+          </div>
+        </div>
+      </div>
+    )}
+  </div>
+);
 }

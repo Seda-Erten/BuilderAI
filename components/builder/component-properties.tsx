@@ -1,4 +1,9 @@
 "use client"
+/**
+ * Amaç: Seçili bileşenin propslarını düzenlemek için form kontrolleri sunar.
+ * Props: component, onUpdate(id, partialProps), onDeleteComponent(id), pages
+ * Not: Değer değişimlerinde yalnızca üst bileşene bildirim gönderir; kalıcılık üst seviyede yönetilir.
+ */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"

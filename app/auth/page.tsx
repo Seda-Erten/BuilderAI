@@ -1,5 +1,9 @@
 "use client"
 
+/**
+ * Kullanıcı giriş-kayıt sayfası. Supabase Auth ile yapılıyor.
+ * Giriş başarılı ise  /builder'a yönlendir. Kayıt başarılı ise giriş ekranına dönüş.
+ */
 import type React from "react"
 
 import { useState } from "react"
@@ -41,8 +45,8 @@ export default function AuthPage() {
         setMessage({ type: "success", text: "Giriş başarılı! Builder ekranına yönlendiriliyorsunuz..." })
         router.push("/builder")
       } else {
-        setMessage({ type: "success", text: "Kayıt başarılı! Lütfen e-postanızı kontrol edin ve giriş yapın." })
-        setIsLogin(true) // Başarılı kayıttan sonra giriş ekranına geç
+        setMessage({ type: "success", text: "Kayıt başarılı! Lütfen giriş yapın." })
+        setIsLogin(true) 
       }
     }
     setLoading(false)
@@ -50,11 +54,8 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0F172A] relative overflow-hidden p-4">
-      {/* Futuristic Background Effects */}
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-slate-900/50 to-[#0F172A]" />
-
-        {/* Grid Pattern */}
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -66,7 +67,6 @@ export default function AuthPage() {
           }}
         />
 
-        {/* Glowing Effects */}
         <div className="absolute top-20 left-20 w-96 h-96 bg-[#6366F1]/20 rounded-full blur-3xl animate-pulse"></div>
         <div
           className="absolute top-40 right-20 w-96 h-96 bg-[#06B6D4]/20 rounded-full blur-3xl animate-pulse"
@@ -77,7 +77,6 @@ export default function AuthPage() {
           style={{ animationDelay: "4s" }}
         ></div>
 
-        {/* Tech Particles */}
         <div className="absolute top-32 left-32 w-2 h-2 bg-[#6366F1] rounded-full animate-ping" />
         <div
           className="absolute top-60 right-40 w-1 h-1 bg-[#06B6D4] rounded-full animate-ping"

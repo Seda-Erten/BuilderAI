@@ -1,6 +1,14 @@
+// Bu dosya, Gemini AI'ya gönderilen prompt'ları üretir.
+// Amaç: AI'nın yalnızca geçerli JSON üretmesini sağlamak ve shadcn/ui + Tailwind
+// tasarım ilkelerine uygun bileşenler oluşturmasını yönlendirmek.
+// Burada iki ana prompt üretici bulunur:
+// - getSystemPrompt: Modelin genel davranışını ve şemayı tanımlar (sistem mesajı gibi).
+// - getComponentPrompt: Kullanıcı isteğine özel üretim talimatı (kullanıcı mesajı).
+
 import shadcnProps from "@/lib/shadcn-component-props.json"
 
 // Shadcn props rehberini kısa metne dönüştür (özet)
+// - AI'nın shadcn bileşenlerinin hangi props'ları aldığını hatırlaması için küçük bir referans.
 function buildPropsGuide(): string {
   try {
     const arr = Array.isArray(shadcnProps) ? (shadcnProps as any[]) : []
@@ -30,6 +38,7 @@ function buildPropsGuide(): string {
 }
 
 // Prompt'tan minimal tür tahmini
+// - AI'ya ipucu vermek için kaba bir sınıflandırma. Üretimin yönünü etkileyebilir.
 function detectComponentType(prompt: string): string {
   const p = prompt.toLowerCase()
   if (p.includes("login") || p.includes("giriş") || p.includes("form") || p.includes("kayıt")) return "loginForm"
@@ -38,6 +47,7 @@ function detectComponentType(prompt: string): string {
 }
 
 // AI'ya verilecek minimal örnek bileşeni döndür (küçük ve net)
+// - Örnek JSON, modelin beklenen format ve stilini taklit etmesine yardımcı olur.
 export const getExampleComponent = (prompt: string): { typeHint: string; example: string } => {
   const typeHint = detectComponentType(prompt)
   const examples: Record<string, any> = {
@@ -81,11 +91,13 @@ export const getExampleComponent = (prompt: string): { typeHint: string; example
 }
 
 // Geliştirilmiş system prompt
+// - Modelin uyması gereken şema, stil ilkeleri ve sınırları burada açıkça tanımlanır.
 export type StylePreset = "minimal" | "brand" | "dark" | "glass"
 
 export const getSystemPrompt = (typeHint: string, exampleJson: string, stylePreset?: StylePreset): string => {
   const propsGuide = buildPropsGuide()
   const presetGuide = (() => {
+    // Stil preseti ipuçları: AI'nın renk/kontrast/seffaflık gibi kararlarını etkiler.
     switch (stylePreset) {
       case "brand":
         return "Stil: Brand – canlı vurgular (bg-blue-600), ikincil alanlar nötr, CTA belirgin."
@@ -166,10 +178,13 @@ Sadece JSON döndür.`
 }
 
 // Geliştirilmiş kullanıcı prompt'u
+// - Kullanıcı isteğini (doğal dil) üretim talimatlarıyla birleştirir.
+// - Not: width/height değerlerinin piksel olmasını istememizin sebebi,
+//   builder canvas ve yeni-sekme önizlemenin birebir eşleşmesini sağlamaktır.
 export const getComponentPrompt = (userRequest: string, stylePreset?: StylePreset): string => {
   const preset = stylePreset || "minimal"
   const lower = userRequest.toLowerCase()
-  const navbarGuide = ((): string => {
+  const navbarGuide = (() => {
     if (lower.includes("navbar") || lower.includes("menü") || lower.includes("navigation") || lower.includes("üst bar")) {
       return `
 ÖZEL NAVBAR KILAVUZU:

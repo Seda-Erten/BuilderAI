@@ -1,3 +1,7 @@
+/**
+ * Amaç: Uygulamanın kök layout'u. Global stilleri, fontu ve metadata'yı uygular.
+ * Notlar: Tailwind dinamik renk sınıflarının üretilmesi için `HiddenSafelist` global olarak bir kez render edilir.
+ */
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
@@ -7,9 +11,8 @@ import { HiddenSafelist } from "@/components/HiddenSafelist"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "AI Builder Pro - No-Code Revolution",
+  title: "AI Builder - No-Code Revolution",
   description: "Yapay zeka destekli no-code platform ile hayallerinizdeki uygulamaları dakikalar içinde oluşturun.",
-  generator: 'v0.dev',
   icons: {
     icon: '/technology.png',      // Tarayıcı sekmesindeki küçük logo
     shortcut: '/technology.png',  // Windows / tarayıcı kısayolları için

@@ -2,6 +2,23 @@
 
 import type { ProjectPages, Component } from "@/lib/types"
 
+/**
+ * Amaç
+ * - Canvas üzerindeki sayfaları ve bileşenleri (ProjectPages) alıp, bağımsız bir React sayfası olarak çalışabilecek JSX kodu üretir.
+ * - Üretilen kod; buton, input, card ve basit div gibi türleri destekler, üst seviye (top-level) konumlandırmayı inline style ile verir.
+ *
+ * Girdi
+ * - pages: ProjectPages (pageId -> { name, backgroundColor?, components[] })
+ *
+ * Çıktı
+ * - string: Tam bir React bileşeni (default export) olarak render edilebilecek JSX kodu.
+ *
+ * Notlar / Sınırlamalar
+ * - Konumlandırma top-level bileşenlerde mutlak (absolute) olarak verilir; iç içe bileşenlerde sarmalama yapılmaz.
+ * - width/height/targetPageId gibi bazı props'lar özel işlenir; width/height stil içinde, targetPageId buton onClick'inde kullanılır.
+ * - Card ve div türleri çocukları (children) özyinelemeli (recursive) şekilde dönüştürür.
+ */
+
 // Yardımcı fonksiyon: Bileşen prop'larını JSX string'ine dönüştürür
 const getPropsString = (props: Component["props"]): string => {
   return Object.entries(props)
@@ -15,8 +32,13 @@ const getPropsString = (props: Component["props"]): string => {
     .join(" ")
 }
 
-// Yardımcı fonksiyon: Bileşenleri JSX'e dönüştürür (özyinelemeli)
-// isNested parametresi eklendi
+/**
+ * Bileşenleri JSX'e dönüştürür (özyinelemeli)
+ *
+ * @param component Dönüştürülecek bileşen
+ * @param indent    Üretilen kod okunabilirliği için girinti
+ * @param isNested  true ise, üst (absolute) sarmalayıcı eklenmez; sadece bileşenin kendi JSX'i döner
+ */
 const generateComponentJsx = (component: Component, indent = "          ", isNested = false): string => {
   const propsString = getPropsString(component.props)
   const styleString = `width: ${component.props.width || "auto"}px, height: ${component.props.height || "auto"}px`
@@ -75,7 +97,14 @@ const generateComponentJsx = (component: Component, indent = "          ", isNes
   }
 }
 
-// Bu fonksiyon, canvas'taki bileşenleri alıp JSX kodu olarak döndürür.
+/**
+ * Canvas'taki bileşenleri alıp tek bir dosya halinde render edilebilir React JSX kodu üretir.
+ * Üretilen kod yapısı:
+ * - UI bağımlılıkları import edilir (Button, Input, Card).
+ * - allPages objesi: her sayfa için { name, backgroundColor, components: [{ id, jsx }] } tutulur.
+ * - currentPageId state'i ile hangi sayfanın gösterileceği kontrol edilir.
+ * - components.map ile her bileşenin JSX'i render edilir.
+ */
 export const generateCode = (pages: ProjectPages): string => {
   let jsxCode = `import React, { useState } from 'react';
   import { Button } from '@/components/ui/button';
