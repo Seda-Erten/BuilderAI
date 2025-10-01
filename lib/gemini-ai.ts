@@ -2,16 +2,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai"
 import { getSystemPrompt, getExampleComponent, getComponentPrompt, type StylePreset } from "./prompts"
 import type { Component } from "@/lib/types"
 
-/**
- * Bu dosya, Gemini modelinden UI bileşenleri üretmek için kullandığımız köprüdür.
- * Basitçe anlatmak gerekirse:
- * - Kullanıcının yazdığı prompt kendi kurallarımız ile birleştiriyoruz.
- * - Modelden gelen metnin içinden sadece geçerli JSON’u güvenli şekilde çekiyoruz.
- * - Gelen veriyi shadcn/tailwind ile uyumlu olacak biçimde toparlayıp eksikleri tamamlıyoruz.
- * - Gerekirse ufak görsel düzeltmeler ve yerleşim ekliyoruz.
- * - Sonuç olarak Canvas’ta direkt çizilebilecek `Component[]` döner.
- */
-
 // AI yanıt tipi
 export interface AIResponse {
   message: string
@@ -19,34 +9,34 @@ export interface AIResponse {
   components?: Component[] // Birden fazla bileşen döndürmek için eklendi
 }
 
-// Gemini istemcisini başlatıyoruz -> API anahtarını .env dosyasından alır.
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "")
+// Gemini istemcisini başlatıyoruz -> API anahtarını .env dosyasından alır (GOOGLE_API_KEY yedeği ile)
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "")
 
 export async function generateComponent(
   prompt: string,
   options?: { generationMode?: "full" | "sections"; stylePreset?: StylePreset; temperature?: number }
 ): Promise<AIResponse> {
   try {
-    // 1) Model ve üretim ayarları: hangi modeli kullanacağımız ve çıktının uzunluğu,çeşitliliği
-    const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-1.5-pro"
-    const FALLBACK_MODEL = "gemini-1.5-flash"
-    const generationConfig = {
-      // temperature: Çıktının ne kadar çeşitli/yaratıcı olacağını belirler (düşük = daha tutarlı)
-      temperature: options?.temperature ?? 0.35,
-      topP: 0.7,
-      topK: 40,
-      // maxOutputTokens: Yanıtın kesilmemesi için üst sınır (uzun JSON’lar için artırıldı)
-      maxOutputTokens: 4096,
-    } as any
 
-    // 2) Prompt anlaşılır, küçük bir örnek eklenir,
-    //    kurallar hatırlatılır ve tümü tek bir mesaja dönüştürülür.
+  const DEFAULT_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash"
+  const FALLBACK_MODEL = "gemini-2.5-pro"
+
+  const generationConfig = {
+    temperature: options?.temperature ?? 0.35,
+    topP: 0.7,
+    topK: 40,
+    maxOutputTokens: 4096, 
+  } as any;
+
+
+ 
+    const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms))
     const { typeHint, example } = getExampleComponent(prompt)
     const systemPrompt = getSystemPrompt(typeHint, example, options?.stylePreset)
     const userPrompt = getComponentPrompt(prompt, options?.stylePreset)
     const fullPrompt = `${systemPrompt}\n\n${userPrompt}`
 
-    // 3) Çağrı akışı: Önce asıl model, hata alırsak hızlı modele düş ve 429’da kısa bekleme ile bir kez daha dene
+  
     let result: any
     try {
       const primary = genAI.getGenerativeModel({ model: DEFAULT_MODEL, generationConfig })
@@ -60,11 +50,47 @@ export async function generateComponent(
       } catch (fallbackErr: any) {
         const fMsg = fallbackErr?.message || ""
         const is429 = fMsg.includes("429") || fMsg.toLowerCase().includes("too many requests")
+        const is404 = fMsg.includes("404") || /not found|is not found/i.test(fMsg)
         if (is429) {
           console.warn("429 tespit edildi: Kısa bir süre bekleyip bir kez daha deniyoruz (flash)")
           await new Promise((r) => setTimeout(r, 1200))
           const retry = genAI.getGenerativeModel({ model: FALLBACK_MODEL, generationConfig })
           result = await retry.generateContent(fullPrompt)
+        } else if (is404) {
+  
+          const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || ""
+          if (!apiKey) throw fallbackErr
+          const candidates = [
+            "gemini-2.5-flash",
+            "gemini-2.5-pro",
+            "gemini-2.5-flash-lite",
+            "gemini-2.0-flash",
+            "gemini-2.0-flash-001",
+            "gemini-2.0-flash-lite",
+            "gemini-2.0-flash-lite-001",
+          ]
+          let ok = false
+          for (const m of candidates) {
+            const url = `https://generativelanguage.googleapis.com/v1/models/${m}:generateContent?key=${encodeURIComponent(apiKey)}`
+            const resp = await fetch(url, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ contents: [{ role: "user", parts: [{ text: fullPrompt }] }] })
+            })
+            if (resp.ok) {
+              const data: any = await resp.json()
+              const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || ""
+              if (!text) continue
+              result = { response: { text: () => text } }
+              ok = true
+              console.warn(`404 sonrası REST v1 ile '${m}' modeli üzerinden yanıt alındı.`)
+              break
+            } else {
+              const bodyText = await resp.text().catch(() => "<no-body>")
+              console.warn(`[REST v1 Fallback] ${m} -> HTTP ${resp.status} ${resp.statusText}. Body: ${bodyText.slice(0, 300)}...`)
+            }
+          }
+          if (!ok) throw fallbackErr
         } else {
           throw fallbackErr
         }
@@ -73,11 +99,8 @@ export async function generateComponent(
     const response = result.response
     const generatedText = response.text()
 
-    console.log("AI'dan gelen ham yanıt:", generatedText) // Ham metnin görülmesi, hata ayıklamayı kolaylaştırabilir
-
-    // 4) AI metninden JSON’un çıkarılması için basit ve dayanıklı yardımcılar
     const extractFirstCodeBlock = (txt: string): string | null => {
-      // Kod bloğu içindeki JSON’un yakalanmasına çalışılır: ```json ... ``` veya ``` ... ```
+      // ```json ... ``` veya ``` ... ```
       const fence = txt.match(/```[a-zA-Z]*\n([\s\S]*?)\n```/)
       return fence && fence[1] ? fence[1].trim() : null
     }
@@ -128,12 +151,12 @@ export async function generateComponent(
       }
     }
 
-    // 5) Elde edilen verinin `Component[]` biçimine oturtulması (tek/nested varyantları normalize edilir)
+
     const componentsArray: Component[] = Array.isArray(parsedData)
       ? parsedData
-      : parsedData.component // Eğer AI tek bir 'component' objesi döndürdüyse
+      : parsedData.component 
         ? [parsedData.component]
-        : parsedData.components // Eğer AI bir objenin içinde 'components' dizisi döndürdüyse
+        : parsedData.components 
           ? parsedData.components
           : []
 
@@ -145,7 +168,6 @@ export async function generateComponent(
       }
     }
 
-    // 6) shadcn/tailwind ile uyumlu, nötr ve temiz başlangıç stili için yardımcılar
     const ensureClass = (base: string, add: string) => {
       if (!base || typeof base !== "string") return add
       const set = new Set(base.split(/\s+/).filter(Boolean))
@@ -167,15 +189,14 @@ export async function generateComponent(
       return base.split(/\s+/).some((c) => re.test(c))
     }
 
-    // 7) Bileşen düzenleyici: tip bazlı varsayılan ölçüler, sınıf temizliği ve basit düzen varsayımları uygulanır
     const normalizeComponent = (comp: any, _isChild?: boolean, _parentW?: number, _parentH?: number): any => {
       comp.props = comp.props || {}
       const type = String(comp.type || "div")
       let cls = String(comp.props.className || "")
 
-      // Renk kısaltmaları genişletilir: bg-yellow → bg-yellow-600, text-blue → text-blue-600, border-red → border-red-300
+    
       const expandColorShorthand = (input: string): string => {
-        // Supported Tailwind color keys (common)
+       
         const colors = [
           "slate","gray","zinc","neutral","stone",
           "red","orange","amber","yellow","lime","green","emerald","teal","cyan","sky","blue","indigo","violet","purple","fuchsia","pink","rose",
@@ -183,17 +204,13 @@ export async function generateComponent(
         ]
         const colorAlt = colors.join("|")
         return input
-          // bg-color → bg-color-600 (no exception)
           .replace(new RegExp(`\\bbg-(${colorAlt})\\b(?!-)`, "g"), (_m, c) => `bg-${c}-600`)
-          // text-color → text-color-600 (except black/white where -600 is odd; keep as-is for those)
           .replace(new RegExp(`\\btext-(${colorAlt})\\b(?!-)`, "g"), (_m, c) => (c === "black" || c === "white") ? `text-${c}` : `text-${c}-600`)
-          // border-color → border-color-300 (lighter borders)
           .replace(new RegExp(`\\bborder-(${colorAlt})\\b(?!-)`, "g"), (_m, c) => (c === "black" || c === "white") ? `border-${c}` : `border-${c}-300`)
       }
 
       cls = expandColorShorthand(cls)
-      
-      // Basit boyut sabitleri kullanılır
+
       const sizes = {
         button: { w: 128, h: 40 },
         input: { w: 256, h: 40 },
@@ -211,31 +228,25 @@ export async function generateComponent(
       comp.props.width = size.w
       comp.props.height = size.h
 
-      // Çocuklarda pozisyon sıfırlanır
       if (comp.parent) {
         comp.x = 0
         comp.y = 0
       }
 
-      // Tip bazlı nötr sınıflar eklenir ve aşırı genişlik/yükseklik sınıfları temizlenir
-      // Aşırı ekran dolduran sınıflar temizlenir
+
       cls = stripClasses(cls, /^(min-h-screen|h-screen|w-screen)$/)
-      // Button/Input’ta gereksiz tam genişlik kaldırılır
       if (type === "button" || type === "input") {
         cls = stripClasses(cls, /^(w-full|max-w-full|min-w-full|w-screen)$/)
       }
-      // Çocuklarda genel olarak tam genişlikten kaçınılır
       if (comp.parent) {
         cls = stripClasses(cls, /^(w-full|max-w-full|min-w-full)$/)
       }
       switch (comp.type) {
         case "card":
-          // Konteynerin renk niyeti ezilmemesi için bg-* zorlaması yapılmaz.
-          // Sadece nötr çerçeve ve iç boşluk eklenir.
           {
             const neutralFrame = `border border-neutral-200 rounded-xl p-6 shadow-sm`
             comp.props.className = ensureClass(cls, neutralFrame.trim())
-            // Düzen yoksa ve çocuk varsa, üst üste binmeyi önlemek için akış düzeni eklenir
+
             const hasLayout = hasClassMatch(comp.props.className, /^(flex|grid)$/) || /\b(flex|grid)\b/.test(String(comp.props.className))
             if (Array.isArray(comp.children) && comp.children.length > 0 && !hasLayout) {
               comp.props.className = ensureClass(String(comp.props.className || ""), "flex flex-col gap-3")
@@ -243,13 +254,13 @@ export async function generateComponent(
           }
           break
         case "button":
-          // Renk talimatı varsa korunur; aksi halde nötr bir temel eklenir
           {
+            const hasBg = hasClassMatch(cls, /^bg-/)
+            const hasText = hasClassMatch(cls, /^text-/)
             const baseAdd = "inline-flex items-center justify-center px-4 py-2 rounded-md focus-visible:ring-2 focus-visible:ring-neutral-400"
-            // Not injecting default black here; leave coloring to AI or later polish step
-            comp.props.className = ensureClass(cls, baseAdd.trim())
+            const colorAdd = hasBg || hasText ? "" : " bg-neutral-900 text-white hover:bg-neutral-800"
+            comp.props.className = ensureClass(cls, `${baseAdd}${colorAdd}`.trim())
           }
-          // Varsayılan varyant, renk belirtilmemişse ayarlanır
           {
             const hasBg = hasClassMatch(String(comp.props.className || ""), /^bg-/)
             const hasText = hasClassMatch(String(comp.props.className || ""), /^text-/)
@@ -271,7 +282,6 @@ export async function generateComponent(
         case "text":
           {
             const hasText = hasClassMatch(cls, /^text-/)
-            // Daha okunaklı satır aralığı için leading eklenir
             let add = hasText ? "" : "text-neutral-900"
             add = `${add} leading-snug`
             comp.props.className = ensureClass(cls, add.trim())
@@ -303,7 +313,7 @@ export async function generateComponent(
         }
         case "table":
           comp.props.className = ensureClass(cls, "w-full")
-          // Basit tablo veri modeli: props.columns?: string[], props.rows?: string[][]
+          // basit tablo veri modeli: props.columns?: string[], props.rows?: string[][]
           if (!Array.isArray(comp.props.columns) || comp.props.columns.length === 0) {
             comp.props.columns = ["Ad", "Durum", "Puan"]
           }
@@ -324,18 +334,17 @@ export async function generateComponent(
       }
 
       if (Array.isArray(comp.children)) {
-        // Çocuklar normalize edilir ve ebeveyn düzenine göre gap/hiza eklenir
         const childParentW = comp.props.width || 320
         const childParentH = comp.props.height || 384
         comp.children = comp.children.map((ch: any) => normalizeComponent(ch, true, childParentW, childParentH))
 
-        // Yerleşim: ebeveyn sınıfı okunur
+        // Yerleşim: ebeveyn sınıfını oku
         let parentCls = String(comp.props.className || "")
         const isFlex = /\bflex\b/.test(parentCls)
         const isGrid = /\bgrid\b/.test(parentCls)
         const isFlexCol = /\bflex-col\b/.test(parentCls)
 
-        // Ebeveyn flex/grid ise ve gap yoksa, varsayılan bir gap eklenir
+        // Ebeveyn flex/grid ise, varsayılan bir gap ekle (yoksa)
         const hasGap = /\bgap-\d+\b/.test(parentCls)
         if ((isFlex || isGrid) && !hasGap) {
           comp.props.className = ensureClass(parentCls, "gap-3")
@@ -343,12 +352,12 @@ export async function generateComponent(
         }
 
         if (isFlex || isGrid) {
-          // Flex-row ise, öğelerin dikeyde ortalanması sağlanır
+          // Flex-row ise, öğeleri dikeyde ortala
           if (isFlex && !isFlexCol && !/\bitems-center\b/.test(parentCls)) {
             comp.props.className = ensureClass(parentCls, "items-center")
             parentCls = String(comp.props.className)
           }
-          // Akış düzeninde: çocuklardan 'absolute' sınıfı temizlenir ve x/y etkisi sıfırlanır
+          // Akış düzeninde: çocuklardan 'absolute' sınıfını temizle ve x/y etkisini sıfırla
           comp.children.forEach((child: any) => {
             const ccls = String(child?.props?.className || "")
             const cleaned = ccls
@@ -357,13 +366,13 @@ export async function generateComponent(
               .filter((cn) => cn !== "absolute")
               .join(" ")
             child.props = child.props || {}
-            // Flex-row hizası için child’a self-center eklenir
+            // Flex-row hizası için child'a self-center ekle
             child.props.className = ensureClass(cleaned, isFlex && !isFlexCol ? "self-center" : "")
             child.x = 0
             child.y = 0
           })
         } else {
-          // Koordinat tabanlı yerleşim (yatay veya dikey) – akış düzeni değilse
+          // Eski düzen: koordinat tabanlı yerleşim (yatay veya dikey)
           if (isFlex && !isFlexCol) {
             let currentX = 0
             comp.children.forEach((child: any) => {
@@ -372,7 +381,7 @@ export async function generateComponent(
               currentX += (child.props?.width || 80) + 12
             })
           } else {
-            // Dikey yerleşim
+            // Dikey
             let currentY = 0
             comp.children.forEach((child: any) => {
               child.y = currentY
@@ -385,17 +394,18 @@ export async function generateComponent(
       return comp
     }
 
-    // Debug: AI sonrası className görünümü (isteğe bağlı tanılama amaçlı)
+    // Debug: Post-AI className snapshot
     if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
       try {
         console.log("[DEBUG] post-AI classNames:", componentsArray.map((c: any) => ({ id: c.id, type: c.type, className: c?.props?.className })))
       } catch {}
     }
 
-    // 8) Normalize edilmiş üst seviye bileşen listesi üretilir
     const normalized = componentsArray.map((c) => normalizeComponent({ ...c }, false))
 
-    // 9) Heuristik: Renk niyeti konteyner içinse ve renk çocuk butonda kaldıysa, renk sınıfları konteynere taşınır ve buton nötrlenir
+    // Heuristic: If the prompt implies a colored form/card (e.g., "pembe login form")
+    // and the color ended up on a child button while the container lacks a bg-*,
+    // move the color classes from the button to the container and neutralize the button.
     const adjustForContainerColorIntent = (items: any[], promptText: string) => {
       const p = (promptText || "").toLowerCase()
       const mentionsForm = /(login|giriş|form|kayıt)/.test(p)
@@ -405,24 +415,22 @@ export async function generateComponent(
       ]
       const mentionsColor = colorWords.some(w => p.includes(w))
       const mentionsButton = /(buton|button|cta)/.test(p)
-      // Require explicit container/background intent to avoid surprising moves
-      const mentionsContainer = /(arka\s*plan|arkaplan|background|bg\b|container|konteyner|kart|card|section|hero)/.test(p)
-      if (!(mentionsForm && mentionsColor && mentionsContainer) || mentionsButton) return items
+      if (!(mentionsForm && mentionsColor) || mentionsButton) return items
 
       const hasBg = (cls?: string) => !!(cls && /\bbg-\S+/.test(cls))
       const extractColorClasses = (cls: string) => {
-        // Küçük bir yazım düzeltmesi: purplez -> purple
+        // quick typo fix: purplez -> purple
         cls = (cls || "").replace(/purplez/g, "purple")
         const parts = cls.split(/\s+/).filter(Boolean)
         const keep: string[] = []
         const moveToContainer: string[] = []
         const dropFromButton: string[] = []
         for (const c of parts) {
-          // Düz ve varyant-ön ekli renk sınıfları yakalanır
+          // capture plain and variant-prefixed color utilities
           if (/^(bg-|text-|border-)/.test(c)) {
             moveToContainer.push(c)
           } else if (/^(hover:|focus:|active:)(bg-|text-|border-)/.test(c)) {
-            // hover/focus renkleri konteynere taşınmaz; butondan çıkarılır
+            // don't move hover/focus colors to container; just drop from button
             dropFromButton.push(c)
           } else {
             keep.push(c)
@@ -442,23 +450,14 @@ export async function generateComponent(
             if (child?.type === 'button' && typeof child?.props?.className === 'string') {
               const { keep, moveToContainer } = extractColorClasses(child.props.className)
               if (moveToContainer.length) {
-                // Renk konteynere taşınır ve buton nötrlenir
+                // Move color to container and neutralize the button
                 comp.props = comp.props || {}
                 comp.props.className = addUnique(String(comp.props.className || ''), moveToContainer.join(' '))
                 child.props.className = keep.join(' ')
-                // Butonda belirgin bir renk kalmadıysa neutral/outline yapılır
+                // Make button neutral/outline if no explicit color remains
                 const childHasColor = /\b(bg-|text-)\S+/.test(child.props.className || '')
                 if (!childHasColor) {
                   child.props.variant = child.props.variant || 'outline'
-                }
-                if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
-                  try {
-                    console.log('[DEBUG] moved color from button to container', {
-                      containerId: comp.id,
-                      childId: child.id,
-                      moved: moveToContainer
-                    })
-                  } catch {}
                 }
                 break
               }
@@ -474,14 +473,14 @@ export async function generateComponent(
 
     const containerAdjusted = adjustForContainerColorIntent(normalized, prompt)
 
-    // Debug: Normalizasyon sonrası (konteyner renk ayarı yapıldıktan sonra) className görünümü
+    // Debug: Post-normalize (after container color adjustment) className snapshot
     if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
       try {
         console.log("[DEBUG] post-normalize classNames:", containerAdjusted.map((c: any) => ({ id: c.id, type: c.type, className: c?.props?.className })))
       } catch {}
     }
 
-    // 10) Basit polish: temel stiller tamamlanır (renk belirtilmişse zorlanmaz)
+    // Basit polish: sadece temel styling (renk belirtilmişse zorlamaz)
     const polishComponents = (items: any[]) => {
       const addClass = (base: string | undefined, extra: string) => {
         const existing = String(base || "").split(/\s+/).filter(Boolean)
@@ -501,8 +500,7 @@ export async function generateComponent(
         switch (type) {
           case "card": {
             const hasBg = hasClassMatch(comp.props.className, /^(bg-|backdrop-)/)
-            // Prompt renk niyeti içeriyorsa bg-white zorlanmaz; renk enjektörüne bırakılır
-            const add = `${hasBg || promptHasColorIntent ? "" : "bg-white "}rounded-lg shadow-md p-6 border border-gray-200`
+            const add = `${hasBg ? "" : "bg-white "}rounded-lg shadow-md p-6 border border-gray-200`
             comp.props.className = addClass(comp.props.className, add.trim())
             break
           }
@@ -510,8 +508,7 @@ export async function generateComponent(
             const hasBg = hasClassMatch(comp.props.className, /^bg-/)
             const hasText = hasClassMatch(comp.props.className, /^text-/)
             const baseAdd = "rounded-lg px-4 py-2 transition-colors"
-            // Prompt renk belirtiyorsa ancak sınıf yoksa varsayılan siyah enjekte edilmez
-            const colorAdd = (hasBg || hasText || promptHasColorIntent) ? "" : " bg-neutral-900 text-white hover:bg-neutral-800"
+            const colorAdd = hasBg || hasText ? "" : " bg-neutral-900 text-white hover:bg-neutral-800"
             comp.props.className = addClass(comp.props.className, `${baseAdd}${colorAdd}`.trim())
             break
           }
@@ -538,95 +535,9 @@ export async function generateComponent(
       return items.map(polish)
     }
 
-    // 11) Prompt renk niyeti: polish aşamasında nötr siyahın enjekte edilmemesi sağlanır
-    const promptHasColorIntent = (() => {
-      const p = (prompt || "").toLowerCase()
-      const colorWords = [
-        "red","orange","amber","yellow","lime","green","emerald","teal","cyan","sky","blue","indigo","violet","purple","fuchsia","pink","rose",
-        "kırmızı","turuncu","amber","sarı","lime","yeşil","zümrüt","turkuaz","camgöbeği","gökyüzü","mavi","lacivert","mor","morumsu","fuşya","pembe","gül"
-      ]
-      return colorWords.some(w => p.includes(w))
-    })()
+    const polished = polishComponents(containerAdjusted)
 
-    // 12) Renk niyeti enjektörü: prompt renk belirtiyor ama sınıf yoksa mantıklı bir sınıf uygulanır
-    // Konteyner (card/div) için uygun bg/text eklenir; bulunamazsa ilk butona uygulanır.
-    const injectColorIntent = (items: any[], promptText: string) => {
-      const p = (promptText || '').toLowerCase()
-      const hueMap: Record<string, string> = {
-        // English
-        red: 'red', orange: 'orange', amber: 'amber', yellow: 'yellow', lime: 'lime', green: 'green', emerald: 'emerald', teal: 'teal', cyan: 'cyan', sky: 'sky', blue: 'blue', indigo: 'indigo', violet: 'violet', purple: 'purple', fuchsia: 'fuchsia', pink: 'pink', rose: 'rose',
-        // Turkish (avoid duplicates of existing English keys)
-        'kırmızı': 'red', 'turuncu': 'orange', 'sarı': 'yellow', 'yeşil': 'green', 'zümrüt': 'emerald', 'turkuaz': 'teal', 'camgöbeği': 'cyan', 'gökyüzü': 'sky', 'mavi': 'blue', 'lacivert': 'indigo', 'mor': 'purple', 'morumsu': 'violet', 'fuşya': 'fuchsia', 'pembe': 'pink', 'gül': 'rose'
-      }
-      let detectedHue: string | null = null
-      for (const [k, v] of Object.entries(hueMap)) {
-        if (p.includes(k)) { detectedHue = v; break }
-      }
-      if (!detectedHue) return items
-
-      const hasColor = (cls?: string) => !!(cls && /(bg-|text-|border-|bg-\[#)/.test(cls))
-      const addUnique = (base: string, add: string) => {
-        const set = new Set(String(base || '').split(/\s+/).filter(Boolean))
-        add.split(/\s+/).filter(Boolean).forEach(c => set.add(c))
-        return Array.from(set).join(' ')
-      }
-
-      const tryColorizeContainer = (comp: any): boolean => {
-        const isContainer = comp && (comp.type === 'card' || comp.type === 'div')
-        if (!isContainer) return false
-        const cls = String(comp.props?.className || '')
-        if (hasColor(cls)) return false
-        comp.props = comp.props || {}
-        // Okunabilir bir kombinasyon seçilir
-        const add = `bg-${detectedHue}-600 text-white`
-        comp.props.className = addUnique(cls, add)
-        if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
-          try { console.log('[DEBUG] color intent injected on container', { id: comp.id, type: comp.type, hue: detectedHue }) } catch {}
-        }
-        return true
-      }
-
-      const tryColorizeButton = (comp: any): boolean => {
-        if (!(comp && comp.type === 'button')) return false
-        const cls = String(comp.props?.className || '')
-        if (hasColor(cls)) return false
-        comp.props = comp.props || {}
-        const add = `bg-${detectedHue}-600 text-white hover:bg-${detectedHue}-700`
-        comp.props.className = addUnique(cls, add)
-        if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
-          try { console.log('[DEBUG] color intent injected on button', { id: comp.id, hue: detectedHue }) } catch {}
-        }
-        return true
-      }
-
-      // Adım 1: Rengi olmayan ilk uygun konteyner renklendirilir
-      for (const c of items) {
-        if (tryColorizeContainer(c)) return items
-      }
-      // Adım 2: Çocuklarda arama yapılır
-      const visit = (c: any): boolean => {
-        if (tryColorizeContainer(c)) return true
-        if (Array.isArray(c?.children)) {
-          for (const ch of c.children) { if (visit(ch)) return true }
-        }
-        return false
-      }
-      for (const c of items) { if (visit(c)) return items }
-      // Adım 3: İlk butona geri düşülür
-      const visitBtn = (c: any): boolean => {
-        if (tryColorizeButton(c)) return true
-        if (Array.isArray(c?.children)) { for (const ch of c.children) { if (visitBtn(ch)) return true } }
-        return false
-      }
-      for (const c of items) { if (visitBtn(c)) return items }
-      return items
-    }
-
-    const colorInjected = promptHasColorIntent ? injectColorIntent(containerAdjusted, prompt) : containerAdjusted
-
-    const polished = polishComponents(colorInjected)
-
-    // 13) Tüm ağaçta benzersiz id’lerin üretilmesi (React key uyarılarının önlenmesi)
+    // Tüm ağaçta benzersiz id'ler üret (React key uyarısını önlemek için)
     const ensureUniqueIds = (items: any[]) => {
       const seen = new Map<string, number>()
       const makeUnique = (proposed: string | undefined, type: string) => {
@@ -654,7 +565,8 @@ export async function generateComponent(
 
     const uniqueComponents = ensureUniqueIds(polished)
 
-    // 14) Basit Auto-Layout: Birden fazla üst seviye bileşen aynı y hattındaysa dikey istif uygulanır
+    // Basit Auto-Layout: Birden fazla üst seviye bileşen aynı/benzer y değerine sahipse (örn. 0),
+    // sunum kalitesi için dikeyde istifleyelim.
     try {
       const manySameY = uniqueComponents.filter((c) => (c.y ?? 0) <= 5).length >= Math.max(2, Math.floor(uniqueComponents.length * 0.6))
       if (uniqueComponents.length >= 2 && manySameY) {
@@ -671,7 +583,7 @@ export async function generateComponent(
           cursorY += h + margin
         })
       }
-    } catch { /* Görsel düzen başarısız olsa da hata bastırılır */ }
+    } catch { /* görsel düzen başarısız olsa da hata bastırılır */ }
 
     return {
       message: parsedData.message || "Bileşen başarıyla oluşturuldu.",
