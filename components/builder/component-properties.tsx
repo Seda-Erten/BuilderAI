@@ -1,8 +1,6 @@
 "use client"
 /**
  * Amaç: Seçili bileşenin propslarını düzenlemek için form kontrolleri sunar.
- * Props: component, onUpdate(id, partialProps), onDeleteComponent(id), pages
- * Not: Değer değişimlerinde yalnızca üst bileşene bildirim gönderir; kalıcılık üst seviyede yönetilir.
  */
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -15,8 +13,8 @@ import { Settings, Type, Text, Square, Palette, Code, Ruler, Link, Trash2 } from
 
 interface ComponentPropertiesProps {
   component: Component
-  onUpdate: (id: string, newProps: any) => void // Prop adı düzeltildi
-  onDeleteComponent: (id: string) => void // Yeni prop eklendi
+  onUpdate: (id: string, newProps: any) => void 
+  onDeleteComponent: (id: string) => void 
   pages: ProjectPages
 }
 
@@ -39,7 +37,7 @@ export function ComponentProperties({ component, onUpdate, onDeleteComponent, pa
             className="bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:bg-white/20 focus:border-purple-500 transition-all"
           />
         )
-      case "value": // Yeni: value prop'u için input
+      case "value": //value prop'u için input
         return (
           <Input
             id={`${component.id}-${key}`}
@@ -63,7 +61,7 @@ export function ComponentProperties({ component, onUpdate, onDeleteComponent, pa
             </SelectContent>
           </Select>
         )
-      case "variant": // For button variant
+      case "variant": 
         return (
           <Select onValueChange={(val) => handlePropChange(key, val)} value={value}>
             <SelectTrigger className="w-full bg-white/10 border-white/20 text-white focus:ring-purple-500">
@@ -135,7 +133,7 @@ export function ComponentProperties({ component, onUpdate, onDeleteComponent, pa
       case "text":
       case "title":
       case "content":
-      case "value": // Yeni: value prop'u için ikon
+      case "value": 
         return <Text className="w-4 h-4 mr-2" />
       case "placeholder":
         return <Type className="w-4 h-4 mr-2" />
@@ -169,7 +167,6 @@ export function ComponentProperties({ component, onUpdate, onDeleteComponent, pa
             Seçili Bileşen: <span className="font-bold capitalize">{component.type}</span>
           </p>
         </div>
-        {/* Always show className editor to allow styling/color changes */}
         <div className="space-y-2">
           <Label htmlFor={`${component.id}-className`} className="text-white/80 flex items-center capitalize">
             {getIconForProp("className")}

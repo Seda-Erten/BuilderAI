@@ -189,7 +189,6 @@ export default function AuthPage() {
             )}
           </div>
 
-          {/* Additional Security Info */}
           <div className="mt-6 p-3 bg-gradient-to-r from-[#6366F1]/10 to-[#06B6D4]/10 border border-[#6366F1]/20 rounded-lg backdrop-blur-sm">
             <div className="flex items-center text-xs text-slate-300">
               <Shield className="w-3 h-3 mr-2 text-[#06B6D4]" />

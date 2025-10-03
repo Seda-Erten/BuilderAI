@@ -4,13 +4,7 @@ import type { ProjectPages, Component } from "@/lib/types"
  * Amaç
  * - Tarayıcı localStorage üzerinde proje sayfalarını (ProjectPages) güvenli şekilde saklamak, okumak ve temizlemek.
  * - Basit sürüm/format geriye dönük uyumluluk (eski dizi formatını yeni sayfa yapısına dönüştürme) sağlar.
- *
- * Depolama Anahtarı
- * - STORAGE_KEY: Aynı projeye ait verilerin çakışmaması için tekil tutulur.
- *
- * Güvenlik/Notlar
- * - localStorage senkron ve yalnızca istemci tarafında mevcuttur; SSR sırasında erişilmemelidir.
- * - JSON.parse/stringify hataları try/catch ile loglanır, UI kırılmasını engeller.
+
  */
 
 const STORAGE_KEY = "ai-builder-project-pages"
@@ -31,7 +25,7 @@ export const saveProject = (pages: ProjectPages) => {
 
 /**
  * Projeyi localStorage'tan okur ve eski formatları gerekiyorsa yeni şemaya dönüştürür.
- * @returns ProjectPages veya null (kayıt yoksa ya da hata durumunda)
+ * @returns ProjectPages veya null
  */
 export const loadProject = (): ProjectPages | null => {
   try {
@@ -42,11 +36,7 @@ export const loadProject = (): ProjectPages | null => {
     console.log("Proje yerel depolamadan yüklendi.")
     const parsedState = JSON.parse(serializedState) as ProjectPages
 
-    // Eski formatı yeni formata dönüştürme (eğer varsa)
-    // Eğer kaydedilen veri sadece Component[] dizisi ise, onu { name: "...", components: [] } formatına dönüştür.
-    // Bu, önceki sürümlerden kalan verilerin uyumlu olmasını sağlar.
     for (const pageId in parsedState) {
-      // Eğer pageId'nin değeri bir dizi ise (eski format) veya name özelliği yoksa
       if (Array.isArray(parsedState[pageId]) || !parsedState[pageId].name) {
         parsedState[pageId] = {
           name: pageId.replace("page-", "Sayfa "), // Varsayılan bir isim ver
@@ -62,9 +52,6 @@ export const loadProject = (): ProjectPages | null => {
   }
 }
 
-/**
- * Kaydedilen projeyi localStorage'tan tamamen siler.
- */
 export const clearProject = () => {
   try {
     localStorage.removeItem(STORAGE_KEY)

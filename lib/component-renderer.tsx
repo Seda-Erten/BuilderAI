@@ -14,11 +14,7 @@ import { cn } from "@/lib/utils"
 /**
  * Component Renderer
  * - `Component` tipindeki JSON tanımlarını gerçek React bileşenlerine dönüştürür.
- * - Tailwind sınıf kısaltmalarını (bg-yellow → bg-yellow-600) genişletir.
- * - Ebeveyn düzenine göre iki mod destekler:
- *   - Flow (flex/grid): çocuklar sırayla akar; drag&drop ile yeniden sıralama yapılabilir.
- *   - Absolute (layoutMode === 'free' değilse): çocuklar x/y ile serbest konumlandırılır; sürükleyerek taşınabilir.
- * - `opts` üzerinden seçim, drag, reorder gibi etkileşim geri çağrıları alınır.
+ * - Tailwind sınıf kısaltmalarını genişletir.
  */
 
 type RenderOpts = {
@@ -36,8 +32,6 @@ export const renderComponent = (
   opts?: RenderOpts,
 ) => {
   const baseClasses = component.props.className || ""
-  // Expand shorthand colors: bg-yellow -> bg-yellow-600, text-blue -> text-blue-600, border-red -> border-red-300
-  // Not: Bu genişletme, hem AI üretimi hem de kullanıcı düzenlemelerinde tutarlı bir görünüm sağlar.
   const expandColorShorthand = (input: string): string => {
     const colors = [
       "slate","gray","zinc","neutral","stone",
@@ -56,7 +50,6 @@ export const renderComponent = (
       console.log('[DEBUG] pre-render className', { id: component.id, type: component.type, className: baseClasses, resolved: resolvedClasses })
     } catch {}
   }
-  // Seçim ring'ini kaldır - sadece temiz görünüm
   const selectionClasses = ""
   
   let renderedElement: React.ReactNode
@@ -64,13 +57,10 @@ export const renderComponent = (
 
   switch (component.type) {
     case "button":
-      // Sayfa geçişi hedefi verilmişse, tıklamada sayfayı değiştir.
       const buttonOnClick = component.props.targetPageId && handleSwitchPage
         ? () => handleSwitchPage(component.props.targetPageId as string)
         : undefined
 
-      // If explicit color classes exist, use a non-coloring variant to avoid override
-      // Not: Tailwind renk sınıfları verilmişse shadcn variant rengini bastırmamak için 'ghost' kullanılır.
       const classStr = String(baseClasses)
       const hasTailwindColor = /(\bbg-[^\s]+|\btext-[^\s]+|\bborder-[^\s]+|\bbg-\[#.+?\])/i.test(classStr)
       const variantProp = hasTailwindColor ? ("ghost" as any) : (component.props.variant as any)
@@ -90,7 +80,6 @@ export const renderComponent = (
       )
       break
     case "text":
-      // Basit metin kapsayıcısı; dikey merkezleme için flex kullanılır.
       renderedElement = (
         <div 
           className={cn(resolvedClasses, selectionClasses)}
@@ -106,7 +95,6 @@ export const renderComponent = (
       )
       break
     case "input":
-      // Controlled yerine dummy onChange; builder içinde canlı data yönetilmez.
       renderedElement = (
         <Input
           type={component.props.type || "text"}
@@ -125,8 +113,6 @@ export const renderComponent = (
       {
         const layoutMode = component.props?.layoutMode as string | undefined
         const parentHasFlow = /\b(flex|grid)\b/.test(baseClasses) && layoutMode !== 'free'
-        // parentHasFlow → akış düzeni: çocuklar draggable olarak yeniden sıralanır.
-        // aksi halde absolute: çocuklar x/y ile konumlanır ve sürüklenerek taşınır.
         renderedElement = (
           <Card 
             className={cn(resolvedClasses, selectionClasses, parentHasFlow ? undefined : "relative overflow-hidden")}
@@ -141,7 +127,6 @@ export const renderComponent = (
                 <div
                   key={child.id}
                   draggable
-                  // Alt tuşu ile ebeveyne geri seçim kısa yolu; drag & drop ile sıralama
                   onClick={(e) => { e.stopPropagation(); if (e.altKey && opts?.parentId) { opts.onSelect?.(opts.parentId) } else { opts?.onSelect?.(child.id) } }}
                   onDragStart={(e) => {
                     e.stopPropagation()
@@ -164,7 +149,6 @@ export const renderComponent = (
                   key={child.id}
                   className="absolute"
                   style={{ left: child.x || 0, top: child.y || 0 }}
-                  // Mouse sürükleme: document-level mousemove/mouseup ile koordinat güncelle
                   onClick={(e) => { e.stopPropagation(); if (e.altKey && opts?.parentId) { opts.onSelect?.(opts.parentId) } else { opts?.onSelect?.(child.id) } }}
                   onMouseDown={(e) => {
                     e.stopPropagation()
@@ -209,7 +193,6 @@ export const renderComponent = (
       )
       break
     case "image":
-      // Basit img etiketi; objectFit ve radius props ile yönetilir.
       renderedElement = (
         <img
           src={component.props.src}
@@ -225,7 +208,6 @@ export const renderComponent = (
       )
       break
     case "avatar":
-      // shadcn Avatar bileşeni + fallback harfleri
       renderedElement = (
         <div
           className={cn("relative", selectionClasses)}
@@ -244,7 +226,6 @@ export const renderComponent = (
       {
         const tabs = Array.isArray(component.props.tabs) ? component.props.tabs : []
         const defaultValue = tabs[0]?.value || "tab1"
-        // Tabs: trigger listesi + her içerik için panel
         renderedElement = (
           <div className={cn(resolvedClasses, selectionClasses)} style={{ width: component.props.width, height: component.props.height }}>
             <Tabs defaultValue={defaultValue}>
@@ -269,7 +250,6 @@ export const renderComponent = (
       {
         const columns: string[] = Array.isArray(component.props.columns) ? component.props.columns : []
         const rows: string[][] = Array.isArray(component.props.rows) ? component.props.rows : []
-        // Basit tablo: başlık satırı + gövde
         renderedElement = (
           <div className={cn(baseClasses, selectionClasses)} style={{ width: component.props.width, height: component.props.height, overflow: 'auto' }}>
             <Table>
@@ -366,7 +346,6 @@ export const renderComponent = (
       }
       break
     default:
-      // Tanınmayan tipler için basit uyarı kutusu
       renderedElement = (
         <div className={cn(baseClasses, selectionClasses, "bg-gray-100 p-4 rounded border-2 border-dashed border-gray-300")}>
           Unknown Component: {component.type}

@@ -6,23 +6,13 @@ import type { ProjectPages, Component } from "@/lib/types"
  * Amaç
  * - Canvas üzerindeki sayfaları ve bileşenleri (ProjectPages) alıp, bağımsız bir React sayfası olarak çalışabilecek JSX kodu üretir.
  * - Üretilen kod; buton, input, card ve basit div gibi türleri destekler, üst seviye (top-level) konumlandırmayı inline style ile verir.
- *
- * Girdi
- * - pages: ProjectPages (pageId -> { name, backgroundColor?, components[] })
- *
- * Çıktı
- * - string: Tam bir React bileşeni (default export) olarak render edilebilecek JSX kodu.
- *
- * Notlar / Sınırlamalar
- * - Konumlandırma top-level bileşenlerde mutlak (absolute) olarak verilir; iç içe bileşenlerde sarmalama yapılmaz.
- * - width/height/targetPageId gibi bazı props'lar özel işlenir; width/height stil içinde, targetPageId buton onClick'inde kullanılır.
- * - Card ve div türleri çocukları (children) özyinelemeli (recursive) şekilde dönüştürür.
+
  */
 
 // Yardımcı fonksiyon: Bileşen prop'larını JSX string'ine dönüştürür
 const getPropsString = (props: Component["props"]): string => {
   return Object.entries(props)
-    .filter(([key]) => key !== "width" && key !== "height" && key !== "targetPageId") // width, height ve targetPageId'yi doğrudan style/onClick'e alacağız
+    .filter(([key]) => key !== "width" && key !== "height" && key !== "targetPageId") 
     .map(([key, value]) => {
       if (typeof value === "string") {
         return `${key}="${value}"`
@@ -35,9 +25,9 @@ const getPropsString = (props: Component["props"]): string => {
 /**
  * Bileşenleri JSX'e dönüştürür (özyinelemeli)
  *
- * @param component Dönüştürülecek bileşen
- * @param indent    Üretilen kod okunabilirliği için girinti
- * @param isNested  true ise, üst (absolute) sarmalayıcı eklenmez; sadece bileşenin kendi JSX'i döner
+ * @param component-
+ * @param indent 
+ * @param isNested  
  */
 const generateComponentJsx = (component: Component, indent = "          ", isNested = false): string => {
   const propsString = getPropsString(component.props)
@@ -62,7 +52,7 @@ const generateComponentJsx = (component: Component, indent = "          ", isNes
         component.children && component.children.length > 0
           ? component.children
               .map((child) => generateComponentJsx(child, indent + "  ", true))
-              .join("\n") // Pass true for nested
+              .join("\n") 
           : ""
       componentJsx = `<Card className="${component.props.className || ""} p-6 rounded-xl shadow-lg border border-gray-200 max-w-sm">
   ${indent}  <h3 className="text-xl font-semibold mb-3">${component.props.title || "Card Title"}</h3>
@@ -70,12 +60,12 @@ const generateComponentJsx = (component: Component, indent = "          ", isNes
   ${cardChildrenJsx ? `${indent}  <div className="mt-4">\n${cardChildrenJsx}\n${indent}  </div>` : ""}
   ${indent}</Card>`
       break
-    case "div": // Yeni div bileşeni
+    case "div": 
       const divChildrenJsx =
         component.children && component.children.length > 0
           ? component.children
               .map((child) => generateComponentJsx(child, indent + "  ", true))
-              .join("\n") // Pass true for nested
+              .join("\n") 
           : ""
       componentJsx = `<div ${propsString}>
   ${divChildrenJsx}
@@ -86,24 +76,18 @@ const generateComponentJsx = (component: Component, indent = "          ", isNes
       break
   }
 
-  // Sadece en üst seviye bileşenleri mutlak konumlandırılmış bir div içinde sarmala
+
   if (!isNested) {
     return `${indent}<div style={{ position: 'absolute', left: ${component.x}px, top: ${component.y}px, ${styleString} }}>
   ${indent}  ${componentJsx.replace(/\n/g, `\n${indent}  `)}
   ${indent}</div>`
   } else {
-    // İç içe bileşenler için sadece kendi JSX'ini döndür
     return componentJsx
   }
 }
 
 /**
  * Canvas'taki bileşenleri alıp tek bir dosya halinde render edilebilir React JSX kodu üretir.
- * Üretilen kod yapısı:
- * - UI bağımlılıkları import edilir (Button, Input, Card).
- * - allPages objesi: her sayfa için { name, backgroundColor, components: [{ id, jsx }] } tutulur.
- * - currentPageId state'i ile hangi sayfanın gösterileceği kontrol edilir.
- * - components.map ile her bileşenin JSX'i render edilir.
  */
 export const generateCode = (pages: ProjectPages): string => {
   let jsxCode = `import React, { useState } from 'react';
@@ -116,7 +100,6 @@ export const generateCode = (pages: ProjectPages): string => {
 
     const allPages = {
   `
-  // Tüm sayfaların verilerini allPages objesine ekle
   Object.entries(pages).forEach(([pageId, pageData]) => {
     jsxCode += `    '${pageId}': {
         name: '${pageData.name}',

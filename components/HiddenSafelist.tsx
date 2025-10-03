@@ -2,12 +2,9 @@
  * Amaç: Tailwind'in JIT derleyicisine belirli renk yardımcı sınıflarını "kullanılıyor" diye işaretleyip
  * üretmesini sağlamak. AI/özellikler paneli çalışma zamanında dinamik sınıflar üretebildiği için,
  * burada görünmez şekilde safelist ettiğimiz sınıflar globalde bir kez render edilir.
- * Not: Görsel çıktı üretmez; `hidden` ve `aria-hidden` ile erişimden de gizlidir.
  */
 import React from "react"
 
-// Rendered once globally to force Tailwind to generate dynamic color utilities
-// used at runtime by AI/Properties. Kept visually hidden.
 export function HiddenSafelist() {
   return (
     <div className="hidden" aria-hidden>

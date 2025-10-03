@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename)
 // Projenin kök dizinini bulmak için yukarı doğru çık
 // Önceki: const projectRoot = path.resolve(__dirname, "../../")
 // Yeni: scripts klasöründen bir üst dizin projenin kök dizinidir.
-const projectRoot = path.resolve(__dirname, "../") // BURAYI DEĞİŞTİRDİK!
+const projectRoot = path.resolve(__dirname, "../") 
 
 const componentsPath = path.join(projectRoot, "components", "ui")
 const outputPath = path.join(projectRoot, "lib", "shadcn-component-props.json")
@@ -23,19 +23,16 @@ const commonProps = {
   className: "string",
   width: "number",
   height: "number",
-  targetPageId: "string", // Özel olarak eklediğimiz prop
-  variant: "enum", // Button için
-  type: "enum", // Input için
-  onClick: "function", // Button için
-  // Diğer yaygın prop'lar eklenebilir
-  // Örneğin: value, onChange, disabled, checked, onCheckedChange, open, onOpenChange
+  targetPageId: "string", 
+  variant: "enum", 
+  type: "enum",
+  onClick: "function", 
 }
 
-// Enum tipleri için olası değerler (manuel olarak eklendi)
 const enumOptions = {
   variant: ["default", "secondary", "destructive", "outline", "ghost", "link"],
-  type: ["text", "email", "password", "number", "checkbox", "radio"], // Input tipleri
-  size: ["default", "sm", "lg", "icon"], // Button size
+  type: ["text", "email", "password", "number", "checkbox", "radio"], 
+  size: ["default", "sm", "lg", "icon"], 
 }
 
 async function generateShadcnProps() {
@@ -58,20 +55,18 @@ async function generateShadcnProps() {
           props: {},
         }
 
-        // Basit regex ile prop'ları ve tiplerini çıkarmaya çalış
+        // Basit regex ile prop'ları ve tiplerini çıkarmaya çalıştım
 
         const interfaceMatch = fileContent.match(/export interface (\w+Props) extends [^{]+?\{([\s\S]*?)\}/)
 
         if (interfaceMatch) {
           const propsContent = interfaceMatch[2]
-          // Her bir prop satırını yakala: propName: type;
           const propLines = propsContent.matchAll(/(\w+)\??:\s*([^;]+);/g)
 
           for (const match of propLines) {
             const propName = match[1].trim()
             let propType = match[2].trim()
 
-            // Olası tipleri basitleştir
             if (propType.includes("React.ReactNode")) propType = "ReactNode"
             else if (propType.includes("React.HTMLAttributes")) propType = "HTMLAttributes"
             else if (propType.includes("React.InputHTMLAttributes")) propType = "InputHTMLAttributes"
@@ -80,10 +75,9 @@ async function generateShadcnProps() {
             else if (propType.includes("number")) propType = "number"
             else if (propType.includes("string")) propType = "string"
             else if (propType.includes("() =>"))
-              propType = "function" // Basit fonksiyon tespiti
-            else if (propType.includes("|")) propType = "enum" // Union tipleri enum olarak işaretle
+              propType = "function"
+            else if (propType.includes("|")) propType = "enum" 
 
-            // Eğer commonProps'ta varsa veya özel bir durumsa ekle
             if (
               commonProps[propName] ||
               propType === "enum" ||
@@ -94,7 +88,7 @@ async function generateShadcnProps() {
             ) {
               const propDefinition = {
                 type: propType,
-                description: `Description for ${propName} prop.`, // Placeholder açıklama
+                description: `Description for ${propName} prop.`, 
               }
 
               // Enum tipleri için olası seçenekleri ekle

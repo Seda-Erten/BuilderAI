@@ -1,11 +1,5 @@
 /**
  * Amaç: Builder merkez alanında AI tarafından üretilen veya kullanıcı eklediği bileşenleri
- * - sürükle-bırak ile konumlandırmak, yeniden boyutlandırmak ve düzenlemek için ana tuval.
- * Props (özet):
- * - pages, currentPageId, setPages: Sayfa ve içerik durumu
- * - handleComponentDrag/Resize/Delete/Drop/...: Etkileşim işleyicileri
- * - onOpenPreview / onOpenPreviewNewTab: Önizleme açma aksiyonları
- * Not: UI davranışını değiştirmeden yalnızca açıklama eklendi.
  */
 import { useState } from "react";
 
@@ -63,7 +57,6 @@ export function Canvas({
   const pageData = pages[currentPageId];
   const canvasComponents = pageData?.components || [];
   const pageBg = pageData?.backgroundColor || "#ffffff";
-  // İçeriğin yüksekliğini dinamik hesapla: en alttaki bileşenin altına 200px boşluk bırak
   const contentHeight = Math.max(
     800,
     ...canvasComponents.map((c) => (Number(c.y) || 0) + (Number((c.props as any)?.height) || 0))
@@ -102,7 +95,6 @@ export function Canvas({
               </p>
             </div>
             <div className="flex items-center space-x-3">
-              {/* Page background controls */}
               <div className="flex items-center space-x-2 text-xs text-gray-700">
                 <span>Arka Plan</span>
                 <input
@@ -194,7 +186,6 @@ export function Canvas({
             const safeY = Number(component.y) || 0;
             let safeW = Number((component.props as any)?.width) || 0;
             let safeH = Number((component.props as any)?.height) || 0;
-            // For image components without explicit width/height, use sensible defaults to avoid 0x0 wrapper
             if (component.type === "image") {
               if (!safeW) safeW = 300;
               if (!safeH) safeH = 200;
@@ -213,11 +204,9 @@ export function Canvas({
                 }}
                 onClick={() => handleComponentClick(component.id)}
                 onMouseDown={(e) => {
-                  // Canvas ofsetini hesaba kat: component container'ının (absolute parent) ekran koordinatlarındaki konumu
                   const containerEl = (e.currentTarget as HTMLElement).parentElement as HTMLElement | null;
                   const containerRect = containerEl?.getBoundingClientRect();
 
-                  // Tıklama anındaki tutma ofseti (bileşen içinde nereye tıklandı)
                   const grabOffsetX = containerRect ? e.clientX - (containerRect.left + safeX) : e.clientX - safeX;
                   const grabOffsetY = containerRect ? e.clientY - (containerRect.top + safeY) : e.clientY - safeY;
 
@@ -254,7 +243,7 @@ export function Canvas({
                         className="h-8 w-8 p-0 bg-white dark:bg-slate-800 shadow-lg hover:scale-110 transition-all duration-200 border border-gray-200 dark:border-slate-700"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Copy component logic
+                  
                         }}
                       >
                         <Copy className="w-3 h-3" />

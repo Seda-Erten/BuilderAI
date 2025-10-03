@@ -1,7 +1,5 @@
 /**
- * Amaç: Ürün tanıtım (landing) sayfası.
- * - Üst seviye tanıtım içerikleri, özellikler, fiyatlandırma ve footer bölümlerini içerir.
- * - Sadece UI katmanı; uygulama davranışını değiştirmez.
+ * Amaç: landing sayfası.
  */
 "use client"
 
@@ -54,11 +52,9 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-[#F8FAFC] relative overflow-hidden">
-      {/* Background Effects - Futuristic Dark */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-[#0F172A] via-slate-900/50 to-[#0F172A]" />
 
-        {/* Futuristic Grid Pattern */}
         <div
           className="absolute inset-0 opacity-20"
           style={{
@@ -70,7 +66,6 @@ export default function LandingPage() {
           }}
         />
 
-        {/* AI & Tech Glowing Effects */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-[#6366F1]/20 via-[#06B6D4]/10 to-transparent rounded-full blur-3xl animate-pulse" />
         <div
           className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr from-[#06B6D4]/15 via-[#F59E0B]/8 to-transparent rounded-full blur-3xl animate-pulse"
@@ -81,7 +76,6 @@ export default function LandingPage() {
           style={{ animationDelay: "4s" }}
         />
 
-        {/* Additional Tech Particles */}
         <div className="absolute top-20 left-20 w-2 h-2 bg-[#6366F1] rounded-full animate-ping" />
         <div
           className="absolute top-40 right-32 w-1 h-1 bg-[#06B6D4] rounded-full animate-ping"
@@ -93,7 +87,6 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* Navbar */}
       <motion.nav
         className="relative z-50 bg-[#1E293B]/95 backdrop-blur-xl border-b border-slate-700/50 shadow-2xl"
         initial={{ y: -100, opacity: 0 }}
@@ -102,7 +95,6 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex items-center justify-between h-16">
-            {/* Logo */}
             
 <Link href="/" className="flex items-center group">
   <div className="w-12 h-10 rounded-lg flex items-center justify-center">
@@ -113,7 +105,6 @@ export default function LandingPage() {
   </h1>
 </Link>
 
-            {/* Navigation */}
             <div className="hidden md:flex items-center space-x-8">
               <div className="flex items-center space-x-6">
                 {[
@@ -146,7 +137,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Mobile menu */}
             <div className="md:hidden">
               <Button variant="ghost" size="sm" className="text-slate-300">
                 <Menu className="w-5 h-5" />
@@ -155,15 +145,12 @@ export default function LandingPage() {
           </div>
         </div>
       </motion.nav>
-
-      {/* Hero Section */}
       <motion.section
         ref={heroRef}
         className="relative z-10 flex flex-col items-center justify-center min-h-screen text-center px-6 py-20"
         style={{ y, opacity }}
       >
         <div className="max-w-4xl mx-auto">
-          {/* Badge */}
           <motion.div
             className="mb-8"
             initial={{ opacity: 0, y: 20 }}
@@ -175,8 +162,6 @@ export default function LandingPage() {
               <span className="text-[#F8FAFC] font-semibold text-sm">AI Destekli UI Asistanı</span>
             </div>
           </motion.div>
-
-          {/* Main Heading */}
           <motion.div
             className="mb-8"
             initial={{ opacity: 0, y: 30 }}
@@ -190,8 +175,6 @@ export default function LandingPage() {
               </span>
             </h1>
           </motion.div>
-
-          {/* Subtitle */}
           <motion.div
             className="mb-12"
             initial={{ opacity: 0, y: 20 }}
@@ -204,7 +187,7 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* CTA Buttons */}
+
           <motion.div
             className="mb-16"
             initial={{ opacity: 0, y: 20 }}
@@ -225,7 +208,6 @@ export default function LandingPage() {
             </div>
           </motion.div>
 
-          {/* Highlights (simplified, no vanity metrics) */}
           <div className="max-w-2xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
               "Hızlı Kurulum",
@@ -241,7 +223,6 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Scroll Indicator */}
           <motion.div
             className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
             animate={{ y: [0, 10, 0] }}
@@ -252,7 +233,6 @@ export default function LandingPage() {
         </div>
       </motion.section>
 
-      {/* Features Section */}
       <section id="features" className="relative z-10 py-24 px-6 bg-[#1E293B]/30 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -356,7 +336,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section id="how-it-works" className="relative z-10 py-24 px-6 bg-[#0F172A]">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -429,7 +408,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
       <section id="pricing" className="relative z-10 py-24 px-6 bg-[#1E293B]/30 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto">
           <motion.div
@@ -517,7 +495,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
       <footer className="relative z-10 bg-[#0F172A] border-t border-slate-800">
         <div className="max-w-6xl mx-auto px-6 py-16">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
@@ -546,7 +523,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Product */}
             <div>
               <h4 className="font-semibold mb-4 text-[#F8FAFC]">Ürün</h4>
               <div className="space-y-2">
@@ -558,7 +534,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Support */}
             <div>
               <h4 className="font-semibold mb-4 text-[#F8FAFC]">Destek</h4>
               <div className="space-y-2">
@@ -570,7 +545,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Legal */}
             <div>
               <h4 className="font-semibold mb-4 text-[#F8FAFC]">Yasal</h4>
               <div className="space-y-2">

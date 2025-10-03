@@ -1,8 +1,8 @@
 "use client";
-// BuilderPage: No-code editörün ana çalışma yüzeyi.
-// Bu sayfa; kullanıcı oturum kontrolü, proje verisini (sayfalar & bileşenler) yükleme/kaydetme,
+// BuilderPage: No-code editörün ana çalışma alanı.
+// Bu sayfa kullanıcı oturum kontrolü, proje verisini yükleme ve kaydetme,
 // AI ile bileşen üretme, sürükle-bırak konumlandırma, yeniden sıralama, yeniden boyutlandırma,
-// ve önizleme (modal veya yeni sekme) işlemlerini orkestre eder.
+// ve önizleme işlemlerini düzenler.
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -17,7 +17,6 @@ import { ExportCodeDialog } from "@/components/builder/ExportCodeDialog";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function BuilderPage() {
-  // UI ve işlevsel durumlar: prompt, üretim bayrağı, mevcut sayfalar ve seçimler
   const [prompt, setPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationMode, setGenerationMode] = useState<"full" | "sections">("sections");
@@ -40,14 +39,13 @@ export default function BuilderPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewWidth, setPreviewWidth] = useState<number | null>(null);
   const router = useRouter();
-  const pagesRef = useRef(pages); // Kaydetme sonrası en güncel değere erişmek için referans
-  const builderCanvasContainerRef = useRef<HTMLDivElement | null>(null); // Canvas kapsayıcısının genişliğini ölçmek için
+  const pagesRef = useRef(pages); 
+  const builderCanvasContainerRef = useRef<HTMLDivElement | null>(null); 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isPropsOpen, setIsPropsOpen] = useState(false);
   const [stylePreset, setStylePreset] = useState<"minimal" | "brand" | "dark" | "glass">("minimal");
   const [temperature, setTemperature] = useState<number>(0.35);
 
-  // Bileşenler için çakışmaya dayanıklı (eşsiz) id üreticisi
   const generateUniqueId = useCallback((type: string, taken: Set<string>) => {
     let candidate = "";
     do {
@@ -59,7 +57,7 @@ export default function BuilderPage() {
     return candidate;
   }, []);
 
-  // Ağaçtaki tüm id'leri topla (üst seviye + children) — eşsizlik kontrolü için
+
   const collectAllIds = useCallback((list: Component[], into?: Set<string>) => {
     const acc = into || new Set<string>()
     const visit = (c: Component) => {
@@ -70,7 +68,6 @@ export default function BuilderPage() {
     return acc
   }, [])
 
-  // Yeni gelen bileşenleri, mevcut ağaçtaki tüm id'leri dikkate alarak eşsizleştir
   const normalizeIncomingComponents = useCallback((incoming: Component[], currentList: Component[]) => {
     const taken = collectAllIds(currentList)
     const fixTree = (node: Component): Component => {
@@ -82,7 +79,6 @@ export default function BuilderPage() {
     return incoming.map(fixTree)
   }, [collectAllIds, generateUniqueId]);
 
-  // Tüm sayfalardaki bileşenleri derinlemesine eşsizleştir (özellikle depodan/uzaktan yükleme sonrası)
   const normalizeAllPages = useCallback((incomingPages: ProjectPages): ProjectPages => {
     const result: ProjectPages = {} as ProjectPages
     for (const [pid, page] of Object.entries(incomingPages)) {
@@ -99,7 +95,6 @@ export default function BuilderPage() {
     return result
   }, [generateUniqueId])
 
-  // İlk yüklemede: kullanıcıyı doğrula, proje verisini Supabase'ten çek
   useEffect(() => {
     const checkUserAndLoadProject = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -117,13 +112,12 @@ export default function BuilderPage() {
     pagesRef.current = pages;
   }, [pages]);
 
-  // Çıkış yap ve auth sayfasına yönlendir
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/auth");
   };
 
-  // Projeyi Supabase'e kaydet (upsert). Başarılı olursa opsiyonel başarı mesajı gönder.
   const handleSaveProject = async (currentPages: ProjectPages, showSuccessMessage = false) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -165,7 +159,6 @@ export default function BuilderPage() {
     }
   };
 
-  // AI bileşen üretimi: prompt'u mesajlara ekle, API'ye gönder, gelen bileşenleri eşsizleştir ve sayfaya ekle
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
 
@@ -224,12 +217,10 @@ export default function BuilderPage() {
     }
   };
 
-  // Canvas'ta bir bileşen seçildiğinde yan panelde özelliklerini göstermek için id'yi işaretle
   const handleComponentClick = (id: string) => {
     setSelectedComponent(id);
   };
 
-  // Üst seviye (absolute) bileşeni sürükleme: sadece x/y güncellenir
   const handleComponentDrag = (id: string, newX: number, newY: number) => {
     setPages((prev) => ({
       ...prev,
@@ -242,7 +233,7 @@ export default function BuilderPage() {
     }));
   };
 
-  // İç içe (nested) child sürükleme: parent içinde child'ın x/y'sini güncelle
+
   const handleChildDrag = (parentId: string, childId: string, newX: number, newY: number) => {
     const updateParentInTree = (list: Component[]): Component[] =>
       list.map((comp) => {
@@ -272,7 +263,7 @@ export default function BuilderPage() {
     await handleSaveProject(pagesRef.current, false);
   };
 
-  // Flex/Grid parent içinde children yeniden sıralama (drag & drop reorder)
+
   const handleChildReorder = (parentId: string, fromIndex: number, toIndex: number) => {
     const reorderInTree = (list: Component[]): Component[] =>
       list.map((comp) => {
@@ -308,9 +299,7 @@ export default function BuilderPage() {
     handleSaveProject(updatedPages, false);
   };
 
-  // Bir bileşeni (ağaçta her seviyede) sil ve kaydet
   const deleteComponent = async (id: string) => {
-    // Remove component with given id anywhere in the tree (top-level or nested)
     const removeFromTree = (list: Component[]): Component[] => {
       return list
         .filter((comp) => comp.id !== id)
@@ -338,7 +327,6 @@ export default function BuilderPage() {
     }
   };
 
-  // Bir bileşenin props'larını güncelle (derin arama) ve kaydet
   const updateComponentProps = useCallback(
     async (id: string, newProps: any) => {
       const updateInTree = (list: Component[]): Component[] =>
@@ -360,14 +348,12 @@ export default function BuilderPage() {
     [currentPageId, pages]
   );
 
-  // Tüm sayfa/bileşenlerden export kodu üret ve dialogu aç
   const handleExportCode = () => {
     const code = generateCode(pages);
     setExportedCode(code);
     setIsExportDialogOpen(true);
   };
 
-  // Bir bileşeni (üst/nested) yeni tip ile değiştir. Konum ve boyutu koru, id eşsizleştir, sonra kaydet.
   const replaceComponent = async (targetId: string, newType: Component["type"]) => {
     const makeNew = (type: Component["type"], base: Component): Component => {
       const currentAllIds = collectAllIds(pages[currentPageId]?.components || [])
@@ -433,7 +419,6 @@ export default function BuilderPage() {
     }
 
     const { next, newId } = replaceInList(pages[currentPageId].components)
-    // After replacement, ensure deep-unique ids (in rare cases of collisions)
     const tmpPages = { ...pages, [currentPageId]: { ...pages[currentPageId], components: next } }
     const updatedPages = normalizeAllPages(tmpPages)
     setPages(updatedPages)
@@ -441,9 +426,7 @@ export default function BuilderPage() {
     if (newId) setSelectedComponent(newId)
   }
 
-  // Tam ekran önizleme (modal): merkez Canvas kapsayıcısının genişliğini ölç ve aynı genişlikle göster
   const handleOpenPreview = () => {
-    // Ölç: merkez Canvas kapsayıcısının mevcut genişliği
     const w = builderCanvasContainerRef.current?.clientWidth;
     if (w && w > 0) {
       setPreviewWidth(w);
@@ -454,20 +437,15 @@ export default function BuilderPage() {
   };
   const handleClosePreview = () => setIsPreviewOpen(false);
 
-  // Yeni sekmede önizleme: güncel projeyi kaydet, Canvas genişliğini ölç, URL'e w parametresi olarak ekle
   const handleOpenPreviewNewTab = async () => {
     try {
-      // En güncel durumu kaydet
       await handleSaveProject(pagesRef.current, false);
       const w = builderCanvasContainerRef.current?.clientWidth;
       const url = `/preview?page=${encodeURIComponent(currentPageId)}${w && w > 0 ? `&w=${w}` : ""}`;
       window.open(url, "_blank");
     } catch (e) {
-      // sessizce geç
     }
   };
-
-  // Supabase'ten proje verisini yükle, yoksa varsayılan sayfayı oluştur
   const handleLoadProject = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -531,7 +509,6 @@ export default function BuilderPage() {
     setSelectedComponent(null);
   };
 
-  // Bir sayfayı sil (en az 1 sayfa bırak). Gerekirse aktif sayfayı değiştir.
   const handleDeletePage = async (pageId: string) => {
     if (Object.keys(pages).length === 1) {
       setMessages((prev) => [...prev, { type: "error", content: "Son sayfayı silemezsin!", timestamp: new Date() }]);
@@ -549,7 +526,6 @@ export default function BuilderPage() {
     setSelectedComponent(null);
   };
 
-  // Sayfa adını güncelle ve kaydet
   const handlePageNameChange = async (pageId: string, newName: string) => {
     const updatedPages = {
       ...pages,
@@ -562,9 +538,7 @@ export default function BuilderPage() {
     await handleSaveProject(updatedPages, false);
   };
 
-  // Component Library kaldırıldığı için dışarıdan Canvas'a drop akışı devre dışı.
 
-// Bileşeni köşe tutamaçlarından sürükleyerek yeniden boyutlandırma. Sol/üst için x/y ayarlanır.
 const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType: "br" | "bl" | "tr" | "tl") => {
   e.stopPropagation();
   const component = pages[currentPageId].components.find((c) => c.id === componentId);
@@ -624,7 +598,6 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
   document.addEventListener("mouseup", stopResize);
 };
 
-  // Navbar'dan sayfa değiştirildiğinde seçili bileşeni sıfırla
   function handleSwitchPage(pageId: string): void {
     setCurrentPageId(pageId);
     setSelectedComponent(null);
@@ -632,7 +605,6 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
 
   return (
   <div className="relative flex flex-col flex-1 overflow-auto bg-white">
-    {/* Üst navbar: proje işlemleri ve sayfa yönetimi */}
     <BuilderNavbar
       pages={pages}
       currentPageId={currentPageId}
@@ -649,13 +621,10 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
       handleOpenPreview={handleOpenPreview}
     />
 
-    {/* Orta alan: Varsayılan kapalı sol/sağ paneller, oklarla aç/kapat */}
     <div className={"px-2 pb-3 pt-3 min-h-[calc(100vh-64px)] flex flex-col gap-2"}>
       <div className="flex-1 min-h-0 relative rounded-md overflow-auto overscroll-contain bg-white">
-        {/* Katman 1: Canvas daima tam alanı kaplar */}
         <div className="absolute inset-0 z-0 pointer-events-auto">
           <div className="flex-1 min-w-0 relative">
-            {/* Ölçüm için kapsayıcı; genişlik yeni sekme/önizleme ile eşleştirilir */}
             <div ref={builderCanvasContainerRef} className="w-full h-full">
               <Canvas
                 pages={pages}
@@ -681,9 +650,7 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
           </div>
         </div>
 
-        {/* Katman 2: Sol/sağ paneller Canvas üzerine bindirilir */}
         <>
-          {/* Sol Panel: AI Chat (toggle) */}
           {isChatOpen ? (
             <div className="absolute left-0 top-0 bottom-0 z-[150] w-[340px] min-w-[300px] max-w-[380px] border-r border-gray-200 bg-white/70 supports-[backdrop-filter]:bg-white/50 backdrop-blur overflow-auto pointer-events-auto">
               <button
@@ -719,7 +686,6 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
             </button>
           )}
 
-                {/* Sağ Panel: Properties (toggle) */}
                 {isPropsOpen ? (
                   <div className="absolute right-0 top-0 bottom-0 z-[150] w-[360px] min-w-[320px] max-w-[420px] border-l border-gray-200 bg-white/70 supports-[backdrop-filter]:bg-white/50 backdrop-blur overflow-auto pointer-events-auto">
                     <button
@@ -751,15 +717,12 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
         </>
     </div>
     </div>
-
-    {/* Kod export diyalogu */}
     <ExportCodeDialog
       isOpen={isExportDialogOpen}
       onOpenChange={setIsExportDialogOpen}
       exportedCode={exportedCode}
     />
 
-    {/* Tam ekran önizleme modalı: Canvas genişliği merkez kapsayıcıyla eşleşir */}
     {isPreviewOpen && (
       <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm flex flex-col">
         <div className="flex items-center justify-between p-3 border-b border-white/10">
@@ -773,7 +736,6 @@ const handleResizeStart = (e: React.MouseEvent, componentId: string, handleType:
         </div>
         <div className="flex-1 min-h-0 p-0">
           <div className="h-full mx-auto" style={{ width: previewWidth ? `${previewWidth}px` : undefined }}>
-            {/* Modal önizleme: aynı genişlikte render */}
             <Canvas
               pages={pages}
               currentPageId={currentPageId}

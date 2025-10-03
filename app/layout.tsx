@@ -1,6 +1,5 @@
 /**
- * Amaç: Uygulamanın kök layout'u. Global stilleri, fontu ve metadata'yı uygular.
- * Notlar: Tailwind dinamik renk sınıflarının üretilmesi için `HiddenSafelist` global olarak bir kez render edilir.
+ * Amaç: Uygulamanın kök layout'u. Global stilleri, fontu uygular.
  */
 import type React from "react"
 import type { Metadata } from "next"
@@ -14,9 +13,8 @@ export const metadata: Metadata = {
   title: "AI Builder - No-Code Revolution",
   description: "Yapay zeka destekli no-code platform ile hayallerinizdeki uygulamaları dakikalar içinde oluşturun.",
   icons: {
-    icon: '/technology.png',      // Tarayıcı sekmesindeki küçük logo
-    shortcut: '/technology.png',  // Windows / tarayıcı kısayolları için
-    apple: '/technology.png',     // iOS cihazlar için
+    icon: '/technology.png',     
+    shortcut: '/technology.png',  
   },
 }
 
@@ -28,7 +26,6 @@ export default function RootLayout({
   return (
     <html lang="tr">
       <body className={`${inter.className} flex flex-col min-h-screen`}>
-        {/* Ensures Tailwind emits dynamic color utilities (pink/purple etc.) */}
         <HiddenSafelist />
         {children}
       </body>

@@ -1,6 +1,5 @@
 /**
  * Amaç: Oluşturulan kodu kullanıcıya modal içerisinde gösterip kopyalamasını sağlamak.
- * Props: isOpen, onOpenChange, exportedCode
  */
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";

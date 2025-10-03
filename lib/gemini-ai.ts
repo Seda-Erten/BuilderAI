@@ -6,10 +6,10 @@ import type { Component } from "@/lib/types"
 export interface AIResponse {
   message: string
   success: boolean
-  components?: Component[] // Birden fazla bileşen döndürmek için eklendi
+  components?: Component[] 
 }
 
-// Gemini istemcisini başlatıyoruz -> API anahtarını .env dosyasından alır (GOOGLE_API_KEY yedeği ile)
+// Gemini istemcisini başlatıyoruz - API anahtarını .env dosyasından alır 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "")
 
 export async function generateComponent(
@@ -100,7 +100,6 @@ export async function generateComponent(
     const generatedText = response.text()
 
     const extractFirstCodeBlock = (txt: string): string | null => {
-      // ```json ... ``` veya ``` ... ```
       const fence = txt.match(/```[a-zA-Z]*\n([\s\S]*?)\n```/)
       return fence && fence[1] ? fence[1].trim() : null
     }
@@ -313,7 +312,6 @@ export async function generateComponent(
         }
         case "table":
           comp.props.className = ensureClass(cls, "w-full")
-          // basit tablo veri modeli: props.columns?: string[], props.rows?: string[][]
           if (!Array.isArray(comp.props.columns) || comp.props.columns.length === 0) {
             comp.props.columns = ["Ad", "Durum", "Puan"]
           }
@@ -338,13 +336,11 @@ export async function generateComponent(
         const childParentH = comp.props.height || 384
         comp.children = comp.children.map((ch: any) => normalizeComponent(ch, true, childParentW, childParentH))
 
-        // Yerleşim: ebeveyn sınıfını oku
         let parentCls = String(comp.props.className || "")
         const isFlex = /\bflex\b/.test(parentCls)
         const isGrid = /\bgrid\b/.test(parentCls)
         const isFlexCol = /\bflex-col\b/.test(parentCls)
 
-        // Ebeveyn flex/grid ise, varsayılan bir gap ekle (yoksa)
         const hasGap = /\bgap-\d+\b/.test(parentCls)
         if ((isFlex || isGrid) && !hasGap) {
           comp.props.className = ensureClass(parentCls, "gap-3")
@@ -352,12 +348,10 @@ export async function generateComponent(
         }
 
         if (isFlex || isGrid) {
-          // Flex-row ise, öğeleri dikeyde ortala
           if (isFlex && !isFlexCol && !/\bitems-center\b/.test(parentCls)) {
             comp.props.className = ensureClass(parentCls, "items-center")
             parentCls = String(comp.props.className)
           }
-          // Akış düzeninde: çocuklardan 'absolute' sınıfını temizle ve x/y etkisini sıfırla
           comp.children.forEach((child: any) => {
             const ccls = String(child?.props?.className || "")
             const cleaned = ccls
@@ -366,13 +360,11 @@ export async function generateComponent(
               .filter((cn) => cn !== "absolute")
               .join(" ")
             child.props = child.props || {}
-            // Flex-row hizası için child'a self-center ekle
             child.props.className = ensureClass(cleaned, isFlex && !isFlexCol ? "self-center" : "")
             child.x = 0
             child.y = 0
           })
         } else {
-          // Eski düzen: koordinat tabanlı yerleşim (yatay veya dikey)
           if (isFlex && !isFlexCol) {
             let currentX = 0
             comp.children.forEach((child: any) => {
@@ -381,7 +373,6 @@ export async function generateComponent(
               currentX += (child.props?.width || 80) + 12
             })
           } else {
-            // Dikey
             let currentY = 0
             comp.children.forEach((child: any) => {
               child.y = currentY
@@ -394,7 +385,7 @@ export async function generateComponent(
       return comp
     }
 
-    // Debug: Post-AI className snapshot
+
     if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
       try {
         console.log("[DEBUG] post-AI classNames:", componentsArray.map((c: any) => ({ id: c.id, type: c.type, className: c?.props?.className })))
@@ -403,9 +394,6 @@ export async function generateComponent(
 
     const normalized = componentsArray.map((c) => normalizeComponent({ ...c }, false))
 
-    // Heuristic: If the prompt implies a colored form/card (e.g., "pembe login form")
-    // and the color ended up on a child button while the container lacks a bg-*,
-    // move the color classes from the button to the container and neutralize the button.
     const adjustForContainerColorIntent = (items: any[], promptText: string) => {
       const p = (promptText || "").toLowerCase()
       const mentionsForm = /(login|giriş|form|kayıt)/.test(p)
@@ -419,18 +407,16 @@ export async function generateComponent(
 
       const hasBg = (cls?: string) => !!(cls && /\bbg-\S+/.test(cls))
       const extractColorClasses = (cls: string) => {
-        // quick typo fix: purplez -> purple
         cls = (cls || "").replace(/purplez/g, "purple")
         const parts = cls.split(/\s+/).filter(Boolean)
         const keep: string[] = []
         const moveToContainer: string[] = []
         const dropFromButton: string[] = []
         for (const c of parts) {
-          // capture plain and variant-prefixed color utilities
           if (/^(bg-|text-|border-)/.test(c)) {
             moveToContainer.push(c)
           } else if (/^(hover:|focus:|active:)(bg-|text-|border-)/.test(c)) {
-            // don't move hover/focus colors to container; just drop from button
+
             dropFromButton.push(c)
           } else {
             keep.push(c)
@@ -450,11 +436,9 @@ export async function generateComponent(
             if (child?.type === 'button' && typeof child?.props?.className === 'string') {
               const { keep, moveToContainer } = extractColorClasses(child.props.className)
               if (moveToContainer.length) {
-                // Move color to container and neutralize the button
                 comp.props = comp.props || {}
                 comp.props.className = addUnique(String(comp.props.className || ''), moveToContainer.join(' '))
                 child.props.className = keep.join(' ')
-                // Make button neutral/outline if no explicit color remains
                 const childHasColor = /\b(bg-|text-)\S+/.test(child.props.className || '')
                 if (!childHasColor) {
                   child.props.variant = child.props.variant || 'outline'
@@ -473,14 +457,12 @@ export async function generateComponent(
 
     const containerAdjusted = adjustForContainerColorIntent(normalized, prompt)
 
-    // Debug: Post-normalize (after container color adjustment) className snapshot
     if (process.env.NEXT_PUBLIC_DEBUG_COLORS === '1') {
       try {
         console.log("[DEBUG] post-normalize classNames:", containerAdjusted.map((c: any) => ({ id: c.id, type: c.type, className: c?.props?.className })))
       } catch {}
     }
 
-    // Basit polish: sadece temel styling (renk belirtilmişse zorlamaz)
     const polishComponents = (items: any[]) => {
       const addClass = (base: string | undefined, extra: string) => {
         const existing = String(base || "").split(/\s+/).filter(Boolean)
@@ -537,7 +519,6 @@ export async function generateComponent(
 
     const polished = polishComponents(containerAdjusted)
 
-    // Tüm ağaçta benzersiz id'ler üret (React key uyarısını önlemek için)
     const ensureUniqueIds = (items: any[]) => {
       const seen = new Map<string, number>()
       const makeUnique = (proposed: string | undefined, type: string) => {
@@ -565,8 +546,6 @@ export async function generateComponent(
 
     const uniqueComponents = ensureUniqueIds(polished)
 
-    // Basit Auto-Layout: Birden fazla üst seviye bileşen aynı/benzer y değerine sahipse (örn. 0),
-    // sunum kalitesi için dikeyde istifleyelim.
     try {
       const manySameY = uniqueComponents.filter((c) => (c.y ?? 0) <= 5).length >= Math.max(2, Math.floor(uniqueComponents.length * 0.6))
       if (uniqueComponents.length >= 2 && manySameY) {
@@ -583,7 +562,9 @@ export async function generateComponent(
           cursorY += h + margin
         })
       }
-    } catch { /* görsel düzen başarısız olsa da hata bastırılır */ }
+    } catch { 
+      
+     }
 
     return {
       message: parsedData.message || "Bileşen başarıyla oluşturuldu.",

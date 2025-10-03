@@ -13,12 +13,12 @@ export interface Component {
     content?: string
     variant?: string
     type?: string
-    className?: string // className'i açıkça string olarak tanımladık
-    width?: number // Genişlik eklendi
-    height?: number // Yükseklik eklendi
-    targetPageId?: string // Hedef sayfa ID'si eklendi
-    value?: string // Yeni: Input bileşenleri için değer prop'u
-    [key: string]: any // Diğer dinamik prop'lar için
+    className?: string 
+    width?: number
+    height?: number 
+    targetPageId?: string 
+    value?: string 
+    [key: string]: any 
   }
   children?: Component[] // İç içe bileşenler için eklendi
 }
@@ -32,9 +32,9 @@ export interface Message {
 // ProjectPages yapısı güncellendi
 export interface ProjectPages {
   [pageId: string]: {
-    name: string // Sayfa adı eklendi
+    name: string
     components: Component[]
-    backgroundColor?: string // Sayfa arka plan rengi (örn: #ffffff veya Tailwind arbitrary: bg-[#ff0000])
+    backgroundColor?: string
   }
 }
 

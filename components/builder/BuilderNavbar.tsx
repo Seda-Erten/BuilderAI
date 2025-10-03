@@ -1,12 +1,6 @@
 /**
- * Amaç: Builder sayfasında proje/sayfa işlemlerini yöneten üst navigasyon barı.
- * Props:
- * - pages, currentPageId: Mevcut sayfalar ve aktif sayfa
- * - editingPageId, setEditingPageId: Sayfa adı düzenleme durumu
- * - handleSwitchPage/newPage/deletePage/pageNameChange: Sayfa yönetimi
- * - handleSaveProject/loadProject/exportCode: Proje işlemleri
- * - handleOpenPreview: Önizleme açma
- * - handleLogout: Oturum kapatma
+ * Amaç: Builder sayfasında psayfa işlemlerini yöneten üst navigasyon barı.
+
  */
 import { Button } from "@/components/ui/button";
 import { Plus, Save, FolderOpen, Eye, Download, Settings, LogOut, X } from "lucide-react";
